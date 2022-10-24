@@ -32,5 +32,7 @@ Michal Jedruszczak (21440496)
 
 ## Step 8: Hyperparameter tuning
 
+# Individual contributions
+
 # References
 Bretschneider, Uwe and Peters, Ralf, "DETECTING CYBERBULLYING IN ONLINE COMMUNITIES" (2016). Research Papers. Paper 61. http://aisel.aisnet.org/ecis2016_rp/61

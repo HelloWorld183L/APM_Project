@@ -1,0 +1,36 @@
+# Pro Data Scientists - Applied Predictive Modelling Project
+
+### Team members
+
+Leon Harper (21385662)
+
+Thomas Newton (21365654)
+
+Michal Jedruszczak (21440496)
+
+# Initial set-up
+
+## Libraries to use
+
+# League of Legends Dataset analysis
+
+## Step 1: Problem statement
+
+## Step 1.5: Preliminary EDA
+
+## Step 2: Importing data
+
+## Step 3: Cleaning the data
+
+## Step 4: EDA
+
+## Step 5: Feature selection
+
+## Step 6: Predictive modelling
+
+## Step 7: Evaluation
+
+## Step 8: Hyperparameter tuning
+
+# References
+Bretschneider, Uwe and Peters, Ralf, "DETECTING CYBERBULLYING IN ONLINE COMMUNITIES" (2016). Research Papers. Paper 61. http://aisel.aisnet.org/ecis2016_rp/61

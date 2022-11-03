@@ -8,6 +8,14 @@ library(dplyr)
 library(ggplot2)
 ```
 
+```{r}
+posts_wow <- read.csv("./posts_wow.csv")
+posts_lol <- read.csv("./posts_lol.csv")
+annotations_wow <- read.csv("./annotations_wow.csv")
+annotations_lol <- read.csv("./annotations_lol.csv")
+```
+
+
 **WoW Preliminary EDA**
 
 In our World of Warcraft posts dataset, we are given 1033 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional WoW annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. 

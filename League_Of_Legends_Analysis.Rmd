@@ -38,9 +38,56 @@ ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Onlin
 
 ## Step 2.5: Preliminary EDA
 ```{r}
-lol_posts_df <- read.csv("Data/posts_lol.csv")
-lol_annotations_df <- read.csv("Data/annotations_lol.csv")
+posts_lol <- read.csv("./posts_lol.csv")
+annotations_lol <- read.csv("./annotations_lol.csv")
 ```
+
+**LoL Preliminary EDA**
+
+In our League of Legends posts dataset, we are given 55 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional LoL annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. 
+
+Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
+
+Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
+
+Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations dataset, all values but post number are categorical.
+
+```{r}
+summary(posts_lol)
+```
+
+```{r}
+summary(annotations_lol)
+```
+
+```{r}
+nrow(posts_lol)
+```
+
+```{r}
+posts_lol %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
+unique(lol_topics)
+```
+
+In the posts_lol data set we have only a single topic.
+
+```{r}
+posts_lol %>% filter(topic_id == 1030) -> lol_top1030 #selects all rows with topic 1030
+count(lol_top1030)
+```
+
+```{r}
+annotations_lol %>% filter(topic_id == 1030) -> lol_ann1030 #selects all rows with wow_topic 1030
+count(lol_ann1030)
+```
+
+```{r}
+100 * count(lol_ann1030)/count(lol_top1030)#percentage of posts marked as cyberbullying
+```
+
+For this topic, we have 55 total posts and 41 of them are marked as cyberbullying. This means that 74.54545% of the posts in this topic contain cyberbullying.
+
+
 ## Step 3: Cleaning the data
 
 ## Step 4: EDA

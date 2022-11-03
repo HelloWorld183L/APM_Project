@@ -21,12 +21,12 @@ library(dplyr)
 library(ggplot2)
 ```
 
-# League of Legends Dataset analysis
+# World of Warcraft Cyberbullying Dataset analysis
 
 ## Step 1: Problem statement
-League of Legends is a popular MOBA (Multiplayer online battle arena) video game with millions of users every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, League however is especially toxic and is often ranked as one of the most toxic gaming community’s today. The current ban rate of all accounts as of September 2022 is 2.25% (Around 2,632,500 account). In a survey by ADL (Anti-Defamation League) it was found 65% of adults ages 18-45 have been harassed/bullied in League of Legends in 2021.
+World of Warcraft is a popular MMORPG (Massively multiplayer online role-playing game) video game with millions of user every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, World of Warcraft however is especially toxic and is often ranked as one of the most toxic gaming community’s today. In a survey by ADL (Anti-Defamation League) it was found 66% of adults ages 18-45 have been harassed/bullied in World of Warcraft in 2021.
 
-The objective of this project is to create a model that will be able to detect cyberbullying/toxicity. By using the League of legends dataset provided to us it will allow the model to have reference for comments deemed as bullying.
+The objective of this project is to create a model that will be able to detect cyberbullying/toxicity. By using the World of Warcraft dataset provided to us it will allow the model to have reference for comments deemed as bullying.
 
 This would be a classification model that when give a comment/statement would decided whether it is bullying or not bullying, it will be able to do this by detecting certain words and phrases.
 
@@ -34,14 +34,16 @@ Currently most video games have an option to filter chat, however this only cens
 
 ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (adl.org)
 
-## Step 2: Importing data
 
-## Step 2.5: Preliminary EDA
+## Step 2: Importing data
 ```{r}
-lol_posts_df <- read.csv("Data/posts_lol.csv")
-lol_annotations_df <- read.csv("Data/annotations_lol.csv")
+wow_posts_df <- read.csv("Data/posts_wow.csv")
+wow_annotations_df <- read.csv("Data/annotations_wow.csv")
 ```
+
 ## Step 3: Cleaning the data
+
+### Step 3.5: Preliminary EDA
 
 ## Step 4: EDA
 
@@ -56,6 +58,4 @@ lol_annotations_df <- read.csv("Data/annotations_lol.csv")
 # Individual contributions
 
 # References
-(Note: This should be in Harvard MMU referencing style)
-
 Bretschneider, Uwe and Peters, Ralf, "DETECTING CYBERBULLYING IN ONLINE COMMUNITIES" (2016). Research Papers. Paper 61. http://aisel.aisnet.org/ecis2016_rp/61

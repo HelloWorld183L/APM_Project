@@ -1,0 +1,173 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+**WoW Preliminary EDA**
+
+In our World of Warcraft posts dataset, we are given 1033 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional WoW annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. 
+
+Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
+
+Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
+
+Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations data set, all values but post number are categorical.
+
+```{r}
+summary(posts_wow)
+```
+
+```{r}
+summary(annotations_wow)
+```
+
+```{r}
+nrow(posts_wow)
+```
+
+```{r}
+posts_wow %>% select("topic_id") -> wow_topics #gets all unique wow_topics from the dataset
+unique(wow_topics)
+```
+
+In the posts_wow data set, we have 5 unique wow_topics which are described as follows:
+
+**149** - [a discussion of a lack of updates for the game]{.underline}
+
+```{r}
+posts_wow %>% filter(topic_id == 149) -> wow_top149 #selects all rows with topic 149
+count(wow_top149)
+```
+
+```{r}
+annotations_wow %>% filter(topic_id == 149) -> ann149 #selects all rows with topic 149
+count(ann149)
+```
+
+```{r}
+100 * count(ann149)/count(wow_top149) #percentage of posts marked as cyberbullying
+```
+
+There are 179 posts in this category, and 15 of them are marked as cyberbullying. This results in an 8.379888% of all posts in this wow_topic being related to cyberbullying.
+
+**10178** -- [general complaints about the game]{.underline}
+
+```{r}
+posts_wow %>% filter(topic_id == 10178) -> wow_top10178 #selects all rows with topic 10178
+count(wow_top10178)
+```
+
+```{r}
+annotations_wow %>% filter(topic_id == 10178) -> ann10178 #selects all rows with topic 10178
+count(ann10178)
+```
+
+```{r}
+100 * count(ann10178)/count(wow_top10178)#percentage of posts marked as cyberbullying
+```
+
+There are 87 posts in this category, and 20 of them are marked as cyberbullying. This results in a 22.98851% of all posts in this wow_topic being related to cyberbullying.
+
+**11554** -- [posts relating to farming in the game]{.underline}
+
+```{r}
+posts_wow %>% filter(topic_id == 11554 ) -> wow_top11554 #selects all rows with topic 11554
+count(wow_top11554)
+```
+
+```{r}
+annotations_wow %>% filter(topic_id == 11554) -> ann11554 #selects all rows with topic 11554
+count(ann11554)
+```
+
+```{r}
+100 * count(ann11554)/count(wow_top11554)#percentage of posts marked as cyberbullying
+```
+
+There are 186 posts in this category, and 13 of them are marked as cyberbullying. This results in a 6.989247% of all posts in this wow_topic being related to cyberbullying.
+
+**11817** -- [discussion about LGBT characters]{.underline}
+
+```{r}
+posts_wow %>% filter(topic_id == 11817) -> wow_top11817 #selects all rows with topic 11817
+count(wow_top11817)
+```
+
+```{r}
+annotations_wow %>% filter(topic_id == 11817) -> ann11817 #selects all rows with topic 11817
+count(ann11817)
+```
+
+```{r}
+100 * count(ann11817)/count(wow_top11817)#percentage of posts marked as cyberbullying
+```
+
+There are 471 posts in this category, and 7 of them are marked as cyberbullying. This results in a 1.4862% of all posts in this wow_topic being related to cyberbullying.
+
+**13120** -- [complaints about the game store]{.underline}
+
+```{r}
+posts_wow %>% filter(topic_id == 13120) -> wow_top13120 #selects all rows with topic 13120
+count(wow_top13120)
+```
+
+```{r}
+annotations_wow %>% filter(topic_id == 13120) -> ann13120 #selects all rows with topic 13120
+count(ann13120)
+```
+
+```{r}
+100 * count(ann13120)/count(wow_top13120)#percentage of posts marked as cyberbullying
+```
+
+There are 100 posts in this category, and 18 of them are marked as cyberbullying. This results in an 18% of all posts in this wow_topic being related to cyberbullying.
+
+**LoL Preliminary EDA**
+
+In our League of Legends posts dataset, we are given 55 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional LoL annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. 
+
+Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
+
+Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
+
+Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations dataset, all values but post number are categorical.
+
+```{r}
+summary(posts_lol)
+```
+
+```{r}
+summary(annotations_lol)
+```
+
+```{r}
+nrow(posts_lol)
+```
+
+```{r}
+posts_lol %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
+unique(lol_topics)
+```
+
+In the posts_lol data set we have only a single topic.
+
+```{r}
+posts_lol %>% filter(topic_id == 1030) -> lol_top1030 #selects all rows with topic 1030
+count(lol_top1030)
+```
+
+```{r}
+annotations_lol %>% filter(topic_id == 1030) -> lol_ann1030 #selects all rows with wow_topic 1030
+count(lol_ann1030)
+```
+
+```{r}
+100 * count(lol_ann1030)/count(lol_top1030)#percentage of posts marked as cyberbullying
+```
+
+For this topic, we have 55 total posts and 41 of them are marked as cyberbullying. This means that 74.54545% of the posts in this topic contain cyberbullying.

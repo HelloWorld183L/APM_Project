@@ -19,6 +19,8 @@ install.packages("ggplot2")
 ```{r}
 library(dplyr)
 library(ggplot2)
+library(rvest)
+library(xml2)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -41,9 +43,30 @@ wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
 ```
 
-## Step 3: Cleaning the data
+## Step 2.5: Preliminary EDA
+We are doing a preliminary EDA in order to understand how we should clean the data and the kind of data that we are dealing with.
 
-### Step 3.5: Preliminary EDA
+## Step 3: Cleaning the data / Pre-processing
+```{r}
+# TODO: Properly remove the blockquote characters (remove posted by, the dates and the ids)
+# We need to add the following:
+# - Fix contractions (before removing punctuation)
+# - Correct popular abbrevations and acronyms (e.g. WoD, lol)
+clean_data <- function(html_msg) {
+  html_msg <- gsub("<.*?>", "", html_msg)
+  html_msg <- gsub('[[:punct:] ]+', ' ', html_msg)
+  html_msg <- gsub('http\\S+\\s*', '', html_msg)
+  return(trimws(html_msg))
+}
+```
+
+```{r}
+wow_posts_df$html_message <- clean_data(wow_posts_df$html_message)
+```
+
+```{r}
+wow_posts_df$word_counts <- lengths(gregexpr("\\W+", wow_posts_df$html_message)) + 1
+```
 
 ## Step 4: EDA
 

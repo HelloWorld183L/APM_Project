@@ -1,0 +1,134 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+install.packages("tidyverse")
+install.packages("tidytext")
+install.packages("wordcloud")
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+```
+
+```{r}
+wow_top11817_tibble <- tibble(txt= wow_top11817$html_message)
+```
+
+```{r}
+wow_top11817_tb <- wow_top11817_tibble%>% 
+    mutate(linenumber = row_number()) %>%
+ unnest_tokens(word, txt) %>% anti_join(stop_words)
+```
+
+```{r}
+wow_top11817_counts <- wow_top11817_tb %>% count(word, sort=TRUE)
+```
+
+```{r}
+wordcloud(wow_top11817_counts$word, wow_top11817_counts$n, 
+          min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+wowTibble <- tibble(txt= posts_wow$html_message)
+wowTibble
+```
+
+```{r}
+new_stop_words <- data.frame(word = c("br","quote","blockquote","div","quot","posted","span","class","href","2014","bml","date","public","page"),
+                             lexicon = c("SMART","SMART","SMART","SMART","SMART","SMART","SMART","SMART","SMART","SMART","SMART","SMART","SMART","SMART"))
+
+
+
+stop_words = rbind(stop_words,new_stop_words)
+```
+
+```{r}
+wow <- wowTibble%>% 
+    mutate(linenumber = row_number()) %>%
+ unnest_tokens(word, txt) %>% anti_join(stop_words)
+wow
+```
+
+```{r}
+wow_counts <- wow %>% count(word, sort=TRUE)
+```
+
+```{r}
+wordcloud(wow_counts$word, wow_counts$n, 
+          min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+
+wow_bigrams <- wowTibble %>% 
+  unnest_tokens(bigram, txt, token = "ngrams", n = 2)
+wow_bigrams
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+      separate(bigram, c("word1", "word2"), sep = " ") 
+wow_bigrams
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+      filter(!word1 %in% stop_words$word) %>%
+      filter(!word2 %in% stop_words$word)
+
+wow_bigrams
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+            filter(!is.na(word1)) %>% 
+            filter(!is.na(word2))
+wow_bigrams
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+            unite(bigram, word1, word2, sep=" ")
+wow_bigrams
+```
+
+```{r}
+bigram_counts %>% 
+  filter(str_detect(bigram_counts$bigram,"[0-9]", negate = TRUE)) -> bigram_counts
+
+bigram_counts
+```
+
+```{r}
+bigram_counts <- wow_bigrams %>% count(bigram, sort=TRUE)
+bigram_counts
+```
+
+```{r}
+install.packages("igraph")
+install.packages("ggraph")
+library(igraph)
+library(ggraph)
+```
+
+```{r}
+
+bigram_graph <- bigram_counts %>%
+                  filter(n >= 7) %>%
+                  graph_from_data_frame()
+
+bigram_graph
+```
+
+```{r}
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+```

@@ -21,6 +21,8 @@ library(dplyr)
 library(ggplot2)
 library(rvest)
 library(xml2)
+library(purrr)
+library(stringr)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -51,17 +53,28 @@ We are doing a preliminary EDA in order to understand how we should clean the da
 # TODO: Properly remove the blockquote characters (remove posted by, the dates and the ids)
 # We need to add the following:
 # - Fix contractions (before removing punctuation)
-# - Correct popular abbrevations and acronyms (e.g. WoD, lol)
+# - Correct popular abbreviations and acronyms (e.g. WoD, lol)
+
 clean_data <- function(html_msg) {
-  html_msg <- gsub("<.*?>", "", html_msg)
-  html_msg <- gsub('[[:punct:] ]+', ' ', html_msg)
-  html_msg <- gsub('http\\S+\\s*', '', html_msg)
-  return(trimws(html_msg))
+  isHtml <- FALSE
+  possReadHtml = possibly(rvest::read_html, otherwise = html_msg)
+  msg <- possReadHtml(html_msg)
+  isHtml <- str_detect(msg, "<.*?>")
+  if (isHtml) {
+    blockquotes <- msg %>% html_nodes("blockquote")
+    print(blockquotes)
+    xml_remove(blockquotes)
+    msg <- gsub("<.*?>", "", msg)
+    msg <- gsub('[[:punct:] ]+', ' ', msg)
+    msg <- gsub('http\\S+\\s*', '', msg)
+  }
+  
+  return(trimws(msg))
 }
 ```
 
 ```{r}
-wow_posts_df$html_message <- clean_data(wow_posts_df$html_message)
+wow_posts_df$html_message <- mapply(clean_data, wow_posts_df$html_message)
 ```
 
 ```{r}

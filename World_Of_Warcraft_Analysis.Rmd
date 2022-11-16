@@ -14,11 +14,19 @@ Michal Jedruszczak (21440496)
 ```{r}
 install.packages("dplyr")
 install.packages("ggplot2")
+install.packages("purrr")
+install.packages("stopwords")
+install.packages("textstem")
 ```
 
 ```{r}
 library(dplyr)
 library(ggplot2)
+library(xml2)
+library(purrr)
+library(stringr)
+library(stopwords)
+library(textstem)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -41,9 +49,46 @@ wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
 ```
 
-## Step 3: Cleaning the data
+## Step 2.5: Preliminary EDA
+We are doing a preliminary EDA in order to understand how we should clean the data and the kind of data that we are dealing with.
 
-### Step 3.5: Preliminary EDA
+## Step 3: Cleaning the data / Pre-processing
+```{r}
+detect_html_regex <- "<.*?>"
+stop_words <- stopwords()
+'%nin%' <- Negate('%in%')
+
+clean_data <- function(html_msg) {
+  isHtml <- FALSE
+  possReadHtml = possibly(xml2::read_html, otherwise = html_msg)
+  msg <- possReadHtml(html_msg)
+  isHtml <- str_detect(msg, detect_html_regex)
+  if (isHtml) {
+    blockquotes <- msg %>% html_nodes("blockquote")
+    xml_remove(blockquotes)
+    msg <- gsub(detect_html_regex, "", msg)
+  }
+  
+  msg <- gsub('http\\S+\\s*', '', msg)
+  msg <- gsub('[[:punct:]]+', ' ', msg)
+  msg <- gsub('\n', '', msg)
+    
+  token <- unlist(strsplit(msg, " "))
+  token <- token[token %nin% stop_words]
+  token <- lemmatize_words(token)
+  msg <- paste(token, collapse = ' ')
+  
+  return(tolower(trimws(msg)))
+}
+```
+
+```{r}
+wow_posts_df$html_message <- mapply(clean_data, wow_posts_df$html_message)
+```
+
+```{r}
+wow_posts_df$word_counts <- lengths(gregexpr("\\W+", wow_posts_df$html_message)) + 1
+```
 
 ## Step 4: EDA
 

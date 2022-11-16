@@ -14,15 +14,19 @@ Michal Jedruszczak (21440496)
 ```{r}
 install.packages("dplyr")
 install.packages("ggplot2")
+install.packages("purrr")
+install.packages("stopwords")
+install.packages("textstem")
 ```
 
 ```{r}
 library(dplyr)
 library(ggplot2)
-library(rvest)
 library(xml2)
 library(purrr)
 library(stringr)
+library(stopwords)
+library(textstem)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -50,26 +54,31 @@ We are doing a preliminary EDA in order to understand how we should clean the da
 
 ## Step 3: Cleaning the data / Pre-processing
 ```{r}
-# TODO: Properly remove the blockquote characters (remove posted by, the dates and the ids)
-# We need to add the following:
-# - Fix contractions (before removing punctuation)
-# - Correct popular abbreviations and acronyms (e.g. WoD, lol)
+detect_html_regex <- "<.*?>"
+stop_words <- stopwords()
+'%nin%' <- Negate('%in%')
 
 clean_data <- function(html_msg) {
   isHtml <- FALSE
-  possReadHtml = possibly(rvest::read_html, otherwise = html_msg)
+  possReadHtml = possibly(xml2::read_html, otherwise = html_msg)
   msg <- possReadHtml(html_msg)
-  isHtml <- str_detect(msg, "<.*?>")
+  isHtml <- str_detect(msg, detect_html_regex)
   if (isHtml) {
     blockquotes <- msg %>% html_nodes("blockquote")
-    print(blockquotes)
     xml_remove(blockquotes)
-    msg <- gsub("<.*?>", "", msg)
-    msg <- gsub('[[:punct:] ]+', ' ', msg)
-    msg <- gsub('http\\S+\\s*', '', msg)
+    msg <- gsub(detect_html_regex, "", msg)
   }
   
-  return(trimws(msg))
+  msg <- gsub('http\\S+\\s*', '', msg)
+  msg <- gsub('[[:punct:]]+', ' ', msg)
+  msg <- gsub('\n', '', msg)
+    
+  token <- unlist(strsplit(msg, " "))
+  token <- token[token %nin% stop_words]
+  token <- lemmatize_words(token)
+  msg <- paste(token, collapse = ' ')
+  
+  return(tolower(trimws(msg)))
 }
 ```
 

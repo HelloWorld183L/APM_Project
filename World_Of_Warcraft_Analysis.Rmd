@@ -87,6 +87,17 @@ wow_posts_df$html_message <- mapply(clean_data, wow_posts_df$html_message)
 ```
 
 ```{r}
+wow_merged_df <- left_join(wow_posts_df, wow_annotations_df, by = c("post_number", "topic_id"), keep=TRUE)
+wow_merged_df$is_bullying <- as.integer(!is.na(wow_merged_df$post_number.y) & !is.na(wow_merged_df$topic_id.y))
+drop <- c('topic_id.y', 'post_number.y', 'annotator', 'offender', 'victim')
+wow_merged_df <- wow_merged_df[, !(names(wow_merged_df) %in% drop)]
+colnames(wow_merged_df)[colnames(wow_merged_df) == 'post_number.x'] <- 'post_number'
+colnames(wow_merged_df)[colnames(wow_merged_df) == 'topic_id.x'] <- 'topic_id'
+
+wow_posts_df <- wow_merged_df[!duplicated(wow_merged_df[c("topic_id","post_number")]),]
+```
+
+```{r}
 wow_posts_df$word_counts <- lengths(gregexpr("\\W+", wow_posts_df$html_message)) + 1
 ```
 

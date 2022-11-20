@@ -87,18 +87,15 @@ posts_df <- merged_df[!duplicated(merged_df$id),]
 ```
 
 ```{r}
-detect_html_regex <- "<.*?>"
 stop_words <- stopwords()
 '%nin%' <- Negate('%in%')
 
-remove_html <- function(html_msg) {
-  possReadHtml = possibly(xml2::read_html, otherwise = html_msg)
-  msg <- possReadHtml(html_msg)
-  isHtml <- str_detect(msg, "<html>")
-  if (isHtml) {
+remove_html <- function(html_msg, isHtml) {
+  if(isHtml) {
+    msg <- xml2::read_html(html_msg)
     blockquotes <- msg %>% html_nodes("blockquote")
     xml_remove(blockquotes)
-    msg <- gsub(detect_html_regex, "", msg)
+    msg <- html_text(msg)
   }
 }
 
@@ -117,7 +114,9 @@ clean_data <- function(msg) {
 ```
 
 ```{r}
-posts_df$html_message <- mapply(remove_html, posts_df$html_message)
+detect_html_regex <- "<.*?>"
+posts_df$is_html <- str_detect(posts_df$html_message, detect_html_regex)
+posts_df$html_message <- mapply(remove_html, posts_df$html_message, posts_df$is_html)
 ```
 
 ```{r}

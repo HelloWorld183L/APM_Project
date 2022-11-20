@@ -91,19 +91,21 @@ detect_html_regex <- "<.*?>"
 stop_words <- stopwords()
 '%nin%' <- Negate('%in%')
 
-clean_data <- function(html_msg) {
+remove_html <- function(html_msg) {
   possReadHtml = possibly(xml2::read_html, otherwise = html_msg)
   msg <- possReadHtml(html_msg)
-  isHtml <- str_detect(msg, detect_html_regex)
+  isHtml <- str_detect(msg, "<html>")
   if (isHtml) {
     blockquotes <- msg %>% html_nodes("blockquote")
     xml_remove(blockquotes)
     msg <- gsub(detect_html_regex, "", msg)
   }
-  
-  #msg <- gsub('http\\S+\\s*', '', msg)
-  #msg <- gsub('[[:punct:]]+', ' ', msg)
-  #msg <- gsub('\n', '', msg)
+}
+
+clean_data <- function(msg) {
+  msg <- gsub('http\\S+\\s*', '', msg)
+  msg <- gsub('[[:punct:]]+', ' ', msg)
+  msg <- gsub('\n', '', msg)
     
   token <- unlist(strsplit(msg, " "))
   token <- token[token %nin% stop_words]
@@ -115,11 +117,23 @@ clean_data <- function(html_msg) {
 ```
 
 ```{r}
+posts_df$html_message <- mapply(remove_html, posts_df$html_message)
+```
+
+```{r}
 posts_df$html_message <- mapply(clean_data, posts_df$html_message)
 ```
 
 ```{r}
+posts_df <- posts_df[!apply(posts_df, 1, function(msg) any(msg=="")),]
+```
+
+```{r}
 posts_df$word_counts <- lengths(gregexpr("\\W+", posts_df$html_message)) + 1
+```
+
+```{r}
+write.csv(posts_df, file="Data/clean_posts.csv")
 ```
 
 ## Step 4: EDA

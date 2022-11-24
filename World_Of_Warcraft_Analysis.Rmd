@@ -89,11 +89,13 @@ stop_words <- stopwords()
 
 remove_html <- function(html_msg, isHtml, dataset) {
   if(isHtml) {
+    html_msg <- gsub("\\\\", '', html_msg)
     msg <- xml2::read_html(html_msg)
     blockquotes <- msg %>% html_nodes("blockquote")
-    quotes <- msg %>% html_nodes("quote")
+    quotes <- msg %>% html_nodes(".quote")
     
-    xml_remove(to_remove)
+    xml_remove(blockquotes)
+    xml_remove(quotes)
     msg <- html_text(msg)
   }
 }

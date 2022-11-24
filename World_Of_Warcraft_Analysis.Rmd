@@ -50,7 +50,7 @@ ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Onlin
 wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
 
-lol_posts_df <- read.csv("Data/posts_wow.csv")
+lol_posts_df <- read.csv("Data/posts_lol.csv")
 lol_annotations_df <- read.csv("Data/annotations_lol.csv")
 ```
 
@@ -78,11 +78,8 @@ merged_df <- left_join(posts_df, annotations_df, by = "id", keep=TRUE)
 merged_df$is_bullying <- as.integer(!is.na(merged_df["id.y"]))
 drop <- c('topic_id.y', 'post_number.y', 'dataset.y', 'id.y', 'annotator', 'offender', 'victim')
 merged_df <- merged_df[, !(names(merged_df) %in% drop)]
-colnames(merged_df)[colnames(merged_df) == 'post_number.x'] <- 'post_number'
-colnames(merged_df)[colnames(merged_df) == 'topic_id.x'] <- 'topic_id'
-colnames(merged_df)[colnames(merged_df) == 'dataset.x'] <- 'dataset'
-colnames(merged_df)[colnames(merged_df) == 'id.x'] <- 'id'
 
+colnames(merged_df) = sub(".x", "", colnames(merged_df))
 posts_df <- merged_df[!duplicated(merged_df$id),]
 ```
 
@@ -90,11 +87,13 @@ posts_df <- merged_df[!duplicated(merged_df$id),]
 stop_words <- stopwords()
 '%nin%' <- Negate('%in%')
 
-remove_html <- function(html_msg, isHtml) {
+remove_html <- function(html_msg, isHtml, dataset) {
   if(isHtml) {
     msg <- xml2::read_html(html_msg)
     blockquotes <- msg %>% html_nodes("blockquote")
-    xml_remove(blockquotes)
+    quotes <- msg %>% html_nodes("quote")
+    
+    xml_remove(to_remove)
     msg <- html_text(msg)
   }
 }
@@ -116,7 +115,8 @@ clean_data <- function(msg) {
 ```{r}
 detect_html_regex <- "<.*?>"
 posts_df$is_html <- str_detect(posts_df$html_message, detect_html_regex)
-posts_df$html_message <- mapply(remove_html, posts_df$html_message, posts_df$is_html)
+posts_df$html_message <- mapply(remove_html, posts_df$html_message, posts_df$is_html, posts_df$dataset)
+posts_df <- posts_df[, !(names(posts_df) %in% 'is_html')]
 ```
 
 ```{r}
@@ -124,7 +124,7 @@ posts_df$html_message <- mapply(clean_data, posts_df$html_message)
 ```
 
 ```{r}
-posts_df <- posts_df[!apply(posts_df, 1, function(msg) any(msg=="")),]
+#posts_df <- posts_df[!apply(posts_df, 1, function(msg) any(msg=="")),]
 ```
 
 ```{r}

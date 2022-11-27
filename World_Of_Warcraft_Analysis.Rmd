@@ -97,7 +97,9 @@ remove_html <- function(html_msg, isHtml, dataset) {
     xml_remove(blockquotes)
     xml_remove(quotes)
     msg <- html_text(msg)
+    return(msg)
   }
+  return(html_msg)
 }
 
 clean_data <- function(msg) {
@@ -123,10 +125,6 @@ posts_df <- posts_df[, !(names(posts_df) %in% 'is_html')]
 
 ```{r}
 posts_df$html_message <- mapply(clean_data, posts_df$html_message)
-```
-
-```{r}
-#posts_df <- posts_df[!apply(posts_df, 1, function(msg) any(msg=="")),]
 ```
 
 ```{r}

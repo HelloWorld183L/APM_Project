@@ -17,6 +17,7 @@ install.packages("ggplot2")
 install.packages("purrr")
 install.packages("stopwords")
 install.packages("textstem")
+install.packages("rvest")
 ```
 
 ```{r}
@@ -27,6 +28,7 @@ library(purrr)
 library(stringr)
 library(stopwords)
 library(textstem)
+library(rvest)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -47,6 +49,9 @@ ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Onlin
 ```{r}
 wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
+
+lol_posts_df <- read.csv("Data/posts_lol.csv")
+lol_annotations_df <- read.csv("Data/annotations_lol.csv")
 ```
 
 ## Step 2.5: Preliminary EDA
@@ -54,21 +59,50 @@ We are doing a preliminary EDA in order to understand how we should clean the da
 
 ## Step 3: Cleaning the data / Pre-processing
 ```{r}
-detect_html_regex <- "<.*?>"
+wow_posts_df$dataset <- "WoW"
+lol_posts_df$dataset <- "LoL"
+wow_annotations_df$dataset <- "WoW"
+lol_annotations_df$dataset <- "LoL"
+
+posts_df <- rbind(wow_posts_df, lol_posts_df)
+annotations_df <- rbind(lol_annotations_df, wow_annotations_df)
+```
+
+```{r}
+posts_df$id <- paste(posts_df$dataset, posts_df$topic_id, posts_df$post_number, sep="_")
+annotations_df$id <- paste(annotations_df$dataset, annotations_df$topic_id, annotations_df$post_number, sep="_")
+```
+
+```{r}
+merged_df <- left_join(posts_df, annotations_df, by = "id", keep=TRUE)
+merged_df$is_bullying <- as.integer(!is.na(merged_df["id.y"]))
+drop <- c('topic_id.y', 'post_number.y', 'dataset.y', 'id.y', 'annotator', 'offender', 'victim')
+merged_df <- merged_df[, !(names(merged_df) %in% drop)]
+
+colnames(merged_df) = sub(".x", "", colnames(merged_df))
+posts_df <- merged_df[!duplicated(merged_df$id),]
+```
+
+```{r}
 stop_words <- stopwords()
 '%nin%' <- Negate('%in%')
 
-clean_data <- function(html_msg) {
-  isHtml <- FALSE
-  possReadHtml = possibly(xml2::read_html, otherwise = html_msg)
-  msg <- possReadHtml(html_msg)
-  isHtml <- str_detect(msg, detect_html_regex)
-  if (isHtml) {
+remove_html <- function(html_msg, isHtml, dataset) {
+  if(isHtml) {
+    html_msg <- gsub("\\\\", '', html_msg)
+    msg <- xml2::read_html(html_msg)
     blockquotes <- msg %>% html_nodes("blockquote")
+    quotes <- msg %>% html_nodes(".quote")
+    
     xml_remove(blockquotes)
-    msg <- gsub(detect_html_regex, "", msg)
+    xml_remove(quotes)
+    msg <- html_text(msg)
+    return(msg)
   }
-  
+  return(html_msg)
+}
+
+clean_data <- function(msg) {
   msg <- gsub('http\\S+\\s*', '', msg)
   msg <- gsub('[[:punct:]]+', ' ', msg)
   msg <- gsub('\n', '', msg)
@@ -83,22 +117,22 @@ clean_data <- function(html_msg) {
 ```
 
 ```{r}
-wow_posts_df$html_message <- mapply(clean_data, wow_posts_df$html_message)
+detect_html_regex <- "<.*?>"
+posts_df$is_html <- str_detect(posts_df$html_message, detect_html_regex)
+posts_df$html_message <- mapply(remove_html, posts_df$html_message, posts_df$is_html, posts_df$dataset)
+posts_df <- posts_df[, !(names(posts_df) %in% 'is_html')]
 ```
 
 ```{r}
-wow_merged_df <- left_join(wow_posts_df, wow_annotations_df, by = c("post_number", "topic_id"), keep=TRUE)
-wow_merged_df$is_bullying <- as.integer(!is.na(wow_merged_df$post_number.y) & !is.na(wow_merged_df$topic_id.y))
-drop <- c('topic_id.y', 'post_number.y', 'annotator', 'offender', 'victim')
-wow_merged_df <- wow_merged_df[, !(names(wow_merged_df) %in% drop)]
-colnames(wow_merged_df)[colnames(wow_merged_df) == 'post_number.x'] <- 'post_number'
-colnames(wow_merged_df)[colnames(wow_merged_df) == 'topic_id.x'] <- 'topic_id'
-
-wow_posts_df <- wow_merged_df[!duplicated(wow_merged_df[c("topic_id","post_number")]),]
+posts_df$html_message <- mapply(clean_data, posts_df$html_message)
 ```
 
 ```{r}
-wow_posts_df$word_counts <- lengths(gregexpr("\\W+", wow_posts_df$html_message)) + 1
+posts_df$word_counts <- lengths(gregexpr("\\W+", posts_df$html_message)) + 1
+```
+
+```{r}
+write.csv(posts_df, file="Data/clean_posts.csv")
 ```
 
 ## Step 4: EDA

@@ -76,11 +76,14 @@ annotations_df$id <- paste(annotations_df$dataset, annotations_df$topic_id, anno
 ```{r}
 merged_df <- left_join(posts_df, annotations_df, by = "id", keep=TRUE)
 merged_df$is_bullying <- as.integer(!is.na(merged_df["id.y"]))
-drop <- c('topic_id.y', 'post_number.y', 'dataset.y', 'id.y', 'annotator', 'offender', 'victim')
+drop <- c('topic_id.y', 'post_number.y', 'dataset.y', 'id.y', 'offender', 'victim')
 merged_df <- merged_df[, !(names(merged_df) %in% drop)]
 
 colnames(merged_df) = sub(".x", "", colnames(merged_df))
-posts_df <- merged_df[!duplicated(merged_df$id),]
+
+names(merged_df)[names(merged_df) == "annotator"] <- "bullying_severity"
+merged_df["bullying_severity"][is.na(merged_df["bullying_severity"])] <- 0
+posts_df <- merged_df %>% group_by(id) %>% slice(which.max(bullying_severity))
 ```
 
 ```{r}
@@ -128,7 +131,12 @@ posts_df$html_message <- mapply(clean_data, posts_df$html_message)
 ```
 
 ```{r}
-posts_df$word_counts <- lengths(gregexpr("\\W+", posts_df$html_message)) + 1
+#posts_df$word_counts <- lengths(gregexpr("\\W+", posts_df$html_message)) + 1
+posts_df$word_counts <- str_count(posts_df$html_message, "\\S+")
+```
+
+```{r}
+posts_df <- posts_df %>% na_if("") %>% na.omit
 ```
 
 ```{r}

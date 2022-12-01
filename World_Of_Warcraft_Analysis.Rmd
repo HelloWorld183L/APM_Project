@@ -18,6 +18,7 @@ install.packages("purrr")
 install.packages("stopwords")
 install.packages("textstem")
 install.packages("rvest")
+install.packages("ROSE")
 ```
 
 ```{r}
@@ -29,6 +30,7 @@ library(stringr)
 library(stopwords)
 library(textstem)
 library(rvest)
+library(ROSE)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -143,6 +145,21 @@ posts_df <- posts_df %>% na_if("") %>% na.omit
 write.csv(posts_df, file="Data/clean_posts.csv")
 ```
 
+```{r}
+ggplot(data=posts_df, aes(x=is_bullying)) + geom_bar()
+```
+As we can see, the data is heavily imbalanced where there isn't many bullying cases. This will result in the classifier being trained to where it is more accurate at classifying non-bullying cases rather than bullying cases. We will use undersampling because we have plenty of non-bullying data but not enough data for bullying cases (this means we can afford to reduce how much data we are dealing with).
+
+```{r}
+posts_df_sample <- ovun.sample(is_bullying~., data=posts_df, method="under")$data
+
+ggplot(data=posts_df_sample, aes(x=is_bullying)) + geom_bar()
+```
+This data should be balanced now. However, this comes at the expense of having much less data to work with.
+
+```{r}
+write.csv(posts_df_sample, file="Data/clean_posts_balanced_sample.csv")
+```
 ## Step 4: EDA
 
 ## Step 5: Feature selection

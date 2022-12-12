@@ -19,6 +19,8 @@ install.packages("stopwords")
 install.packages("textstem")
 install.packages("rvest")
 install.packages("ROSE")
+install.packages("tm")
+cat("\014")
 ```
 
 ```{r}
@@ -31,6 +33,7 @@ library(stopwords)
 library(textstem)
 library(rvest)
 library(ROSE)
+library(tm)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -106,19 +109,6 @@ remove_html <- function(html_msg, isHtml, dataset) {
   }
   return(html_msg)
 }
-
-clean_data <- function(msg) {
-  msg <- gsub('http\\S+\\s*', '', msg)
-  msg <- gsub('[[:punct:]]+', ' ', msg)
-  msg <- gsub('\n', '', msg)
-    
-  token <- unlist(strsplit(msg, " "))
-  token <- token[token %nin% stop_words]
-  token <- lemmatize_words(token)
-  msg <- paste(token, collapse = ' ')
-  
-  return(tolower(trimws(msg)))
-}
 ```
 
 ```{r}
@@ -126,14 +116,21 @@ detect_html_regex <- "<.*?>"
 posts_df$is_html <- str_detect(posts_df$html_message, detect_html_regex)
 posts_df$html_message <- mapply(remove_html, posts_df$html_message, posts_df$is_html, posts_df$dataset)
 posts_df <- posts_df[, !(names(posts_df) %in% 'is_html')]
+
+toSpaceTransformer <- content_transformer(function (x, pattern) gsub(pattern, "", x))
+posts_corpus <- Corpus(VectorSource(posts_df$html_message))
+posts_corpus <- posts_corpus %>% 
+                tm_map(content_transformer(tolower)) %>%
+                tm_map(toSpaceTransformer, "http\\S+\\s*") %>%
+                tm_map(removeNumbers) %>%
+                tm_map(removeWords, stopwords("english")) %>%
+                tm_map(removePunctuation) %>%
+                tm_map(stemDocument) %>%
+                tm_map(stripWhitespace)
+posts_df$html_message <- data.frame(text=sapply(posts_corpus, identity), stringsAsFactors = F)$text
 ```
 
 ```{r}
-posts_df$html_message <- mapply(clean_data, posts_df$html_message)
-```
-
-```{r}
-#posts_df$word_counts <- lengths(gregexpr("\\W+", posts_df$html_message)) + 1
 posts_df$word_counts <- str_count(posts_df$html_message, "\\S+")
 ```
 
@@ -146,25 +143,62 @@ write.csv(posts_df, file="Data/clean_posts.csv")
 ```
 
 ```{r}
-ggplot(data=posts_df, aes(x=is_bullying)) + geom_bar()
+corpus = VCorpus(VectorSource(posts_df$html_message))
+dtm = DocumentTermMatrix(corpus)
+dtm = removeSparseTerms(dtm, 0.999)
+posts_data = as.data.frame(as.matrix(dtm))
+posts_data$is_bullying = as.factor(posts_df$is_bullying)
+```
+
+```{r}
+ggplot(data=posts_data, aes(x=is_bullying)) + geom_bar()
 ```
 As we can see, the data is heavily imbalanced where there isn't many bullying cases. This will result in the classifier being trained to where it is more accurate at classifying non-bullying cases rather than bullying cases. We will use undersampling because we have plenty of non-bullying data but not enough data for bullying cases (this means we can afford to reduce how much data we are dealing with).
 
 ```{r}
-posts_df_sample <- ovun.sample(is_bullying~., data=posts_df, method="under")$data
+is_bullying = which(posts_data$is_bullying == 1)
+not_bullying = which(posts_data$is_bullying == 0)
+nsamp = min(length(is_bullying), length(not_bullying))
+sample_bullying = sample(is_bullying, nsamp)
+sample_not_bullying = sample(not_bullying, nsamp)
+posts_data_balanced = posts_data[c(sample_bullying, sample_not_bullying),]
 
-ggplot(data=posts_df_sample, aes(x=is_bullying)) + geom_bar()
+ggplot(data=posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ```
+
 This data should be balanced now. However, this comes at the expense of having much less data to work with.
 
 ```{r}
-write.csv(posts_df_sample, file="Data/clean_posts_balanced_sample.csv")
+set.seed(42)
+part <- sample(2, nrow(posts_data), replace=TRUE, prob=c(0.6, 0.4))
+train <- posts_data[part == 1, ]
+test <- posts_data[part == 2, ]
+```
+
+```{r}
+set.seed(42)
+part <- sample(2, nrow(posts_data_balanced), replace=TRUE, prob=c(0.6, 0.4))
+train_balanced <- posts_data_balanced[part == 1, ]
+test_balanced <- posts_data_balanced[part == 2, ]
+```
+
+```{r}
+write.csv(posts_data, file="Data/clean_posts.csv")
+write.csv(posts_data_balanced, file="Data/clean_posts_balanced_sample.csv")
+write.csv(train_balanced, file="Data/train_balanced.csv")
+write.csv(test_balanced, file="Data/test_balanced.csv")
+write.csv(train, file="Data/train.csv")
+write.csv(test, file="Data/test.csv")
 ```
 ## Step 4: EDA
 
 ## Step 5: Feature selection
 
 ## Step 6: Predictive modelling
+
+```{r}
+
+```
 
 ## Step 7: Evaluation
 

@@ -217,27 +217,20 @@ train_control = trainControl(method = "cv", number = 5)
 ### SVM
 ```{r}
 set.seed(50)
+tic()
 svm_model = caret::train(is_bullying~., data=train_balanced , method =  "svmLinear" , trControl = train_control)
-print(svm_model)
-
-#Using model to make predictions
+svm_toc <- toc(quiet=T)
+svm_time_taken <- svm_toc$toc - svm_toc$tic
 svm_pred_y = predict(svm_model, test_balanced)
-```
-
-```{r}
-svm_precision <- precision(svm_pred_y, test_balanced$is_bullying)
-svm_sensitivity <- sensitivity(svm_pred_y, test_balanced$is_bullying)
-svm_f1_score <- F_meas(svm_pred_y, test_balanced$is_bullying)
 ```
 
 ### MLP
 ```{r}
-#MLP
 set.seed(50)
+tic()
 mlp_model = caret::train(is_bullying~., data=train_balanced , method =  "mlp" , trControl = train_control)
-print(mlp_model)
-
-#Using model to make predictions
+mlp_toc <- toc(quiet=T)
+mlp_time_taken <- mlp_toc$toc - mlp_toc$tic
 mlp_pred_y = predict(mlp_model, test_balanced)
 ```
 
@@ -245,10 +238,10 @@ mlp_pred_y = predict(mlp_model, test_balanced)
 ```{r}
 #Random Forest
 set.seed(50)
+tic()
 rf_model = caret::train(is_bullying~., data=train_balanced , method =  "rf" , trControl = train_control)
-print(rf_model)
-
-#Using model to make predictions
+rf_toc <- toc(quiet=T)
+rf_time_taken <- rf_toc$toc - rf_toc$tic
 rf_pred_y = predict(rf_model, test_balanced)
 ```
 
@@ -316,9 +309,15 @@ Precision <- c(svm_precision, mlp_precision)
 Sensitivity <- c(svm_sensitivity, mlp_sensitivity)
 F1_Score <- c(svm_f1_score, mlp_f1_score)
 AUC <- c(svm_auc, mlp_auc)
+Time_to_Train_secs <- c(svm_time_taken)
 
-results <- data.frame(Model_Name, Precision, Sensitivity, F1_Score, AUC)
+results <- data.frame(Model_Name, Precision, Sensitivity, F1_Score, AUC, Time_to_Train_secs)
 results
+```
+
+### Output evaluation results
+```{r}
+write.csv(results, "Data/results.csv")
 ```
 
 ## Step 8: Hyperparameter tuning

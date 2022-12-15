@@ -25,6 +25,7 @@ install.packages("kernlab")
 install.packages("RSNNS")
 install.packages("randomForest")
 install.packages("pROC")
+install.packages("tictoc")
 cat("\014")
 ```
 
@@ -44,6 +45,7 @@ library(kernlab)
 library(RSNNS)
 library(randomForest)
 library(pROC)
+library(tictoc)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -223,15 +225,6 @@ svm_pred_y = predict(svm_model, test_balanced)
 ```
 
 ```{r}
-caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
-```
-
-```{r}
-svm_confusion_matrix <- caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
-svm_confusion_matrix
-```
-
-```{r}
 svm_precision <- precision(svm_pred_y, test_balanced$is_bullying)
 svm_sensitivity <- sensitivity(svm_pred_y, test_balanced$is_bullying)
 svm_f1_score <- F_meas(svm_pred_y, test_balanced$is_bullying)
@@ -248,10 +241,6 @@ print(mlp_model)
 mlp_pred_y = predict(mlp_model, test_balanced)
 ```
 
-```{r}
-caret::confusionMatrix(data=mlp_pred_y, reference=test_balanced$is_bullying, mode="everything")
-```
-
 ### Random Forest
 ```{r}
 #Random Forest
@@ -263,16 +252,12 @@ print(rf_model)
 rf_pred_y = predict(rf_model, test_balanced)
 ```
 
-```{r}
-caret::confusionMatrix(data=rf_pred_y, reference=factor(test_balanced$is_bullying), mode="everything")
-```
-
 ## Step 7: Evaluation
 ### Confusion matrices
 ```{r}
 svm_confusion_matrix <- caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
 mlp_confusion_matrix <- caret::confusionMatrix(data=mlp_pred_y, reference=test_balanced$is_bullying, mode="everything")
-rf_confusion_matrix <- caret::confusionMatrix(data=rf_pred_y, reference=factor(test_balanced$is_bullying), mode="everything")
+rf_confusion_matrix <- caret::confusionMatrix(data=rf_pred_y, reference=test_balanced$is_bullying, mode="everything")
 ```
 
 ```{r}
@@ -324,6 +309,7 @@ rf_f1_score <- F_meas(rf_pred_y, test_balanced$is_bullying)
 rf_auc <- auc(rf_roc)
 ```
 
+#### Table of metrics
 ```{r}
 Model_Name <- c("SVM", "MLP")
 Precision <- c(svm_precision, mlp_precision)

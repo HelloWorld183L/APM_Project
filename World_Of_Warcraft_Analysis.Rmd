@@ -20,6 +20,11 @@ install.packages("textstem")
 install.packages("rvest")
 install.packages("ROSE")
 install.packages("tm")
+install.packages("caret")
+install.packages("kernlab")
+install.packages("RSNNS")
+install.packages("randomForest")
+install.packages("pROC")
 cat("\014")
 ```
 
@@ -34,6 +39,11 @@ library(textstem)
 library(rvest)
 library(ROSE)
 library(tm)
+library(caret)
+library(kernlab)
+library(RSNNS)
+library(randomForest)
+library(pROC)
 ```
 
 # World of Warcraft Cyberbullying Dataset analysis
@@ -48,7 +58,6 @@ This would be a classification model that when give a comment/statement would de
 Currently most video games have an option to filter chat, however this only censors certain words/phrases. Our model will be able to detect strings of words rather than just certain ones.
 
 ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (adl.org)
-
 
 ## Step 2: Importing data
 ```{r}
@@ -196,11 +205,135 @@ write.csv(test, file="Data/test.csv")
 
 ## Step 6: Predictive modelling
 
+### Initial setup
 ```{r}
+train_balanced$is_bullying = as.factor(train_balanced$is_bullying)
+test_balanced$is_bullying = as.factor(test_balanced$is_bullying)
+train_control = trainControl(method = "cv", number = 5)
+```
 
+### SVM
+```{r}
+set.seed(50)
+svm_model = caret::train(is_bullying~., data=train_balanced , method =  "svmLinear" , trControl = train_control)
+print(svm_model)
+
+#Using model to make predictions
+svm_pred_y = predict(svm_model, test_balanced)
+```
+
+```{r}
+caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
+```
+
+```{r}
+svm_confusion_matrix <- caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
+svm_confusion_matrix
+```
+
+```{r}
+svm_precision <- precision(svm_pred_y, test_balanced$is_bullying)
+svm_sensitivity <- sensitivity(svm_pred_y, test_balanced$is_bullying)
+svm_f1_score <- F_meas(svm_pred_y, test_balanced$is_bullying)
+```
+
+### MLP
+```{r}
+#MLP
+set.seed(50)
+mlp_model = caret::train(is_bullying~., data=train_balanced , method =  "mlp" , trControl = train_control)
+print(mlp_model)
+
+#Using model to make predictions
+mlp_pred_y = predict(mlp_model, test_balanced)
+```
+
+```{r}
+caret::confusionMatrix(data=mlp_pred_y, reference=test_balanced$is_bullying, mode="everything")
+```
+
+### Random Forest
+```{r}
+#Random Forest
+set.seed(50)
+rf_model = caret::train(is_bullying~., data=train_balanced , method =  "rf" , trControl = train_control)
+print(rf_model)
+
+#Using model to make predictions
+rf_pred_y = predict(rf_model, test_balanced)
+```
+
+```{r}
+caret::confusionMatrix(data=rf_pred_y, reference=factor(test_balanced$is_bullying), mode="everything")
 ```
 
 ## Step 7: Evaluation
+### Confusion matrices
+```{r}
+svm_confusion_matrix <- caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
+mlp_confusion_matrix <- caret::confusionMatrix(data=mlp_pred_y, reference=test_balanced$is_bullying, mode="everything")
+rf_confusion_matrix <- caret::confusionMatrix(data=rf_pred_y, reference=factor(test_balanced$is_bullying), mode="everything")
+```
+
+```{r}
+svm_confusion_matrix
+```
+
+```{r}
+mlp_confusion_matrix
+```
+
+```{r}
+rf_confusion_matrix
+```
+
+### ROC Curves
+```{r}
+converted_pred_y_svm <- as.numeric(levels(svm_pred_y))[svm_pred_y]
+converted_pred_y_mlp <- as.numeric(levels(mlp_pred_y))[mlp_pred_y]
+#converted_pred_y_rf <- as.numeric(levels(rf_pred_y))[rf_pred_y]
+
+par(pty="s")
+svm_roc <- roc(test_balanced$is_bullying~converted_pred_y_svm, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
+mlp_roc <- roc(test_balanced$is_bullying~converted_pred_y_mlp, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, legacy.axes=TRUE, add=TRUE)
+#rf_roc <- roc(test_balanced$is_bullying, converted_pred_y_rf, plot=TRUE, print.auc=TRUE, col="green", lwd=4, legacy.axes=TRUE, add=TRUE)
+
+legend("bottomright", legend=c("SVM", "MLP"), col=c("red", "blue"), lwd=4)
+```
+
+### Table of metrics
+#### Calculating metrics
+```{r}
+svm_precision <- precision(svm_pred_y, test_balanced$is_bullying)
+svm_sensitivity <- sensitivity(svm_pred_y, test_balanced$is_bullying)
+svm_f1_score <- F_meas(svm_pred_y, test_balanced$is_bullying)
+svm_auc <- auc(svm_roc)
+```
+
+```{r}
+mlp_precision <- precision(mlp_pred_y, test_balanced$is_bullying)
+mlp_sensitivity <- sensitivity(mlp_pred_y, test_balanced$is_bullying)
+mlp_f1_score <- F_meas(mlp_pred_y, test_balanced$is_bullying)
+mlp_auc <- auc(mlp_roc)
+```
+
+```{r}
+rf_precision <- precision(rf_pred_y, test_balanced$is_bullying)
+rf_sensitivity <- sensitivity(rf_pred_y, test_balanced$is_bullying)
+rf_f1_score <- F_meas(rf_pred_y, test_balanced$is_bullying)
+rf_auc <- auc(rf_roc)
+```
+
+```{r}
+Model_Name <- c("SVM", "MLP")
+Precision <- c(svm_precision, mlp_precision)
+Sensitivity <- c(svm_sensitivity, mlp_sensitivity)
+F1_Score <- c(svm_f1_score, mlp_f1_score)
+AUC <- c(svm_auc, mlp_auc)
+
+results <- data.frame(Model_Name, Precision, Sensitivity, F1_Score, AUC)
+results
+```
 
 ## Step 8: Hyperparameter tuning
 

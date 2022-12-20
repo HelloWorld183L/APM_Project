@@ -311,14 +311,14 @@ rf_confusion_matrix
 ```{r}
 converted_pred_y_svm <- as.numeric(levels(svm_pred_y))[svm_pred_y]
 converted_pred_y_mlp <- as.numeric(levels(mlp_pred_y))[mlp_pred_y]
-#converted_pred_y_rf <- as.numeric(levels(rf_pred_y))[rf_pred_y]
+converted_pred_y_rf <- as.numeric(levels(rf_pred_y))[rf_pred_y]
 
 par(pty="s")
 svm_roc <- roc(test_balanced$is_bullying~converted_pred_y_svm, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
 mlp_roc <- roc(test_balanced$is_bullying~converted_pred_y_mlp, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, legacy.axes=TRUE, add=TRUE)
-#rf_roc <- roc(test_balanced$is_bullying, converted_pred_y_rf, plot=TRUE, print.auc=TRUE, col="green", lwd=4, legacy.axes=TRUE, add=TRUE)
+rf_roc <- roc(test_balanced$is_bullying, converted_pred_y_rf, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, legacy.axes=TRUE, add=TRUE)
 
-legend("bottomright", legend=c("SVM", "MLP"), col=c("red", "blue"), lwd=4)
+legend("bottomright", legend=c("SVM", "MLP", "RF"), col=c("red", "blue", "green"), lwd=4)
 ```
 This code creates ROC curves for each model with different colours. We then print the AUC values for each curve.
 
@@ -349,12 +349,12 @@ rf_auc <- auc(rf_roc)
 
 #### Table
 ```{r}
-Model_Name <- c("SVM", "MLP")
-Precision <- c(svm_precision, mlp_precision)
-Sensitivity <- c(svm_sensitivity, mlp_sensitivity)
-F1_Score <- c(svm_f1_score, mlp_f1_score)
-AUC <- c(svm_auc, mlp_auc)
-Time_to_Train_secs <- c(svm_time_taken)
+Model_Name <- c("SVM", "MLP", "RF")
+Precision <- c(svm_precision, mlp_precision, rf_precision)
+Sensitivity <- c(svm_sensitivity, mlp_sensitivity, rf_sensitivity)
+F1_Score <- c(svm_f1_score, mlp_f1_score, rf_f1_score)
+AUC <- c(svm_auc, mlp_auc, rf_auc)
+Time_to_Train_secs <- c(svm_time_taken, mlp_time_taken, rf_time_taken)
 
 results <- data.frame(Model_Name, Precision, Sensitivity, F1_Score, AUC, Time_to_Train_secs)
 results

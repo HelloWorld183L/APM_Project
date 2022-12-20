@@ -49,6 +49,7 @@ library(RSNNS)
 library(randomForest)
 library(pROC)
 library(tictoc)
+cat("\014")
 ```
 Run the above code block to import the required libraries.
 
@@ -80,6 +81,7 @@ We are doing a preliminary EDA in order to understand how we should clean the da
 
 ## Step 3: Cleaning the data / Pre-processing
 ```{r}
+# Creates dataset column to merge posts and annotations csv files together
 wow_posts_df$dataset <- "WoW"
 lol_posts_df$dataset <- "LoL"
 wow_annotations_df$dataset <- "WoW"
@@ -102,8 +104,10 @@ merged_df$is_bullying <- as.integer(!is.na(merged_df["id.y"]))
 drop <- c('topic_id.y', 'post_number.y', 'dataset.y', 'id.y', 'offender', 'victim')
 merged_df <- merged_df[, !(names(merged_df) %in% drop)]
 
+# Removes the ".x" characters from the remaining annotations columns
 colnames(merged_df) = sub(".x", "", colnames(merged_df))
 
+# Create bullying_severity column
 names(merged_df)[names(merged_df) == "annotator"] <- "bullying_severity"
 merged_df["bullying_severity"][is.na(merged_df["bullying_severity"])] <- 0
 posts_df <- merged_df %>% group_by(id) %>% slice(which.max(bullying_severity))
@@ -113,16 +117,17 @@ This code performs a left join to merge the dataframes together. Most of the col
 We also created a bullying_severity column as we found that some posts have been annotated as bullying by multiple annotators which could make this a useful feature for model building.
 
 ```{r}
-stop_words <- stopwords()
-'%nin%' <- Negate('%in%')
-
-remove_html <- function(html_msg, isHtml, dataset) {
+remove_html <- function(html_msg, isHtml) {
   if(isHtml) {
+    # Remove backslashes when dealing with LoL forum data
     html_msg <- gsub("\\\\", '', html_msg)
+    # Get XML nodes
     msg <- xml2::read_html(html_msg)
+    # Get the block quotes and quotes (blockquotes for WoW, .quote for LoL)
     blockquotes <- msg %>% html_nodes("blockquote")
     quotes <- msg %>% html_nodes(".quote")
     
+    # Remove quote elements for LoL and WoW datasets
     xml_remove(blockquotes)
     xml_remove(quotes)
     msg <- html_text(msg)
@@ -136,11 +141,15 @@ The "html_message" column has messages that have HTML and do not contain HTML at
 To remove the content of the blockquotes, we used RVest to acquire the blockquote element contents as well as any <div> elements with ".quote" and then we use xml_remove() to remove the blockquote element nodes. We then convert the RVest object back into a string.
 
 ```{r}
+# Regex for detecting HTML
 detect_html_regex <- "<.*?>"
+# Create is_html column
 posts_df$is_html <- str_detect(posts_df$html_message, detect_html_regex)
-posts_df$html_message <- mapply(remove_html, posts_df$html_message, posts_df$is_html, posts_df$dataset)
+# Apply remove_html function to html_message
+posts_df$html_message <- mapply(remove_html, posts_df$html_message, posts_df$is_html)
 posts_df <- posts_df[, !(names(posts_df) %in% 'is_html')]
 
+# Converts any regex passed into the transformer into a space character
 toSpaceTransformer <- content_transformer(function (x, pattern) gsub(pattern, "", x))
 posts_corpus <- Corpus(VectorSource(posts_df$html_message))
 posts_corpus <- posts_corpus %>% 
@@ -196,7 +205,7 @@ posts_data_balanced = posts_data[c(sample_bullying, sample_not_bullying),]
 
 ggplot(data=posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ```
-This data should be balanced now. However, this comes at the expense of having much less data to work with.
+This creates a sample of the bullying data for balancing purposes. However, this comes at the expense of having much less data to work with.
 
 ```{r}
 set.seed(42)
@@ -215,12 +224,12 @@ test_balanced <- posts_data_balanced[part == 2, ]
 We split the data using a 60:40 split. This is for the balanced data.
 
 ```{r}
-write.csv(posts_data, file="Data/clean_posts_dtm.csv")
 write.csv(posts_data_balanced, file="Data/clean_posts_dtm_balanced_sample.csv")
 write.csv(train_balanced, file="Data/train_balanced.csv")
 write.csv(test_balanced, file="Data/test_balanced.csv")
 write.csv(train, file="Data/train.csv")
 write.csv(test, file="Data/test.csv")
+write.csv(posts_data, file="Data/clean_posts_dtm.csv")
 ```
 We export the training and test data to make model building easier.
 
@@ -239,31 +248,40 @@ train_control = trainControl(method = "cv", number = 5)
 
 ### SVM
 ```{r}
-set.seed(50)
+set.seed(42)
+
 tic()
+
 svm_model = caret::train(is_bullying~., data=train_balanced , method =  "svmLinear" , trControl = train_control)
+
 svm_toc <- toc(quiet=T)
+
 svm_time_taken <- svm_toc$toc - svm_toc$tic
 svm_pred_y = predict(svm_model, test_balanced)
 ```
 
 ### MLP
 ```{r}
-set.seed(50)
+set.seed(42)
 tic()
+
 mlp_model = caret::train(is_bullying~., data=train_balanced , method =  "mlp" , trControl = train_control)
 mlp_toc <- toc(quiet=T)
+
 mlp_time_taken <- mlp_toc$toc - mlp_toc$tic
 mlp_pred_y = predict(mlp_model, test_balanced)
 ```
 
 ### Random Forest
 ```{r}
-#Random Forest
-set.seed(50)
+set.seed(42)
+
 tic()
+
 rf_model = caret::train(is_bullying~., data=train_balanced , method =  "rf" , trControl = train_control)
+
 rf_toc <- toc(quiet=T)
+
 rf_time_taken <- rf_toc$toc - rf_toc$tic
 rf_pred_y = predict(rf_model, test_balanced)
 ```

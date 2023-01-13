@@ -14,11 +14,21 @@ Michal Jedruszczak (21440496)
 ```{r}
 install.packages("dplyr")
 install.packages("ggplot2")
+install.packages("tidyverse")
+install.packages("tidytext")
+install.packages("wordcloud")
+install.packages("igraph")
+install.packages("ggraph")
 ```
 
 ```{r}
 library(dplyr)
 library(ggplot2)
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+library(igraph)
+library(ggraph)
 ```
 
 # League of Legends Dataset analysis
@@ -37,60 +47,161 @@ ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Onlin
 ## Step 2: Importing data
 
 ## Step 2.5: Preliminary EDA
-```{r}
-posts_lol <- read.csv("./posts_lol.csv")
-annotations_lol <- read.csv("./annotations_lol.csv")
-```
 
-**LoL Preliminary EDA**
-
-In our League of Legends posts dataset, we are given 55 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional LoL annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. 
+In our League of Legends posts dataset, we are given 443 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional LoL annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. This information has been combined into a single file -- clean_posts_balanced_sample.csv.
 
 Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
 
 Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
 
 Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations dataset, all values but post number are categorical.
+```{r}
+posts_lol <- read.csv(file.choose())
+clean_posts_balanced_sample %>% filter(dataset == "LoL") -> posts_lol
+posts_lol #Selecting the League of Legends dataset
+```
 
 ```{r}
 summary(posts_lol)
 ```
 
 ```{r}
-summary(annotations_lol)
-```
-
-```{r}
 nrow(posts_lol)
 ```
 
+There are 443 data points in this sample.
+
 ```{r}
 posts_lol %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
-unique(lol_topics)
+nrow(unique(lol_topics))
 ```
 
-In the posts_lol data set we have only a single topic.
+This data set has a total of 17 different topics.
 
 ```{r}
-posts_lol %>% filter(topic_id == 1030) -> lol_top1030 #selects all rows with topic 1030
-count(lol_top1030)
-```
-
-```{r}
-annotations_lol %>% filter(topic_id == 1030) -> lol_ann1030 #selects all rows with wow_topic 1030
-count(lol_ann1030)
+posts_lol %>% filter(is_bullying == 1) -> bullying_lol
+bullying_lol
 ```
 
 ```{r}
-100 * count(lol_ann1030)/count(lol_top1030)#percentage of posts marked as cyberbullying
+100 * count(bullying_lol)/count(posts_lol)#percentage of posts marked as cyberbullying
 ```
 
-For this topic, we have 55 total posts and 41 of them are marked as cyberbullying. This means that 74.54545% of the posts in this topic contain cyberbullying.
+For this data set 57.6% of the posts are labeled as bullying.
 
 
 ## Step 3: Cleaning the data
 
 ## Step 4: EDA
+
+
+```{r}
+clean_posts_balanced_sample <- read.csv(file.choose())
+```
+
+```{r}
+clean_posts_balanced_sample %>% filter(dataset == "LoL") -> posts_lol
+posts_lol #Selecting the League of Legends dataset
+```
+
+```{r}
+lol_tibble <- tibble(txt = posts_lol$html_message)
+lol_tibble #transforming the HTML messages into a tibble for an easier workflow
+```
+
+```{r}
+lol_tibble <- lol_tibble%>% 
+    mutate(linenumber = row_number()) %>%
+ unnest_tokens(word, txt) %>% anti_join(stop_words)
+lol_tibble #splitting tibble by words
+```
+
+```{r}
+lol_counts <- lol_tibble %>% count(word, sort=TRUE)
+lol_counts #sorting words by count
+```
+
+```{r}
+wordcloud(lol_counts$word, lol_counts$n, 
+          min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+  #creating a word cloud out of sorted list
+```
+
+```{r}
+
+lol_bigrams <- tibble(txt = posts_lol$html_message) %>% 
+  unnest_tokens(bigram, txt, token = "ngrams", n = 2)
+lol_bigrams
+#split original tibble into two-word bigrams
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+      separate(bigram, c("word1", "word2"), sep = " ") 
+lol_bigrams #separating them out for easier cleaning
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+      filter(!word1 %in% stop_words$word) %>%
+      filter(!word2 %in% stop_words$word)
+
+lol_bigrams #filtering out unwanted words
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+            filter(!is.na(word1)) %>% 
+            filter(!is.na(word2))
+lol_bigrams #removing null values
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+            unite(bigram, word1, word2, sep=" ")
+lol_bigrams #joining the words back together
+```
+
+```{r}
+lol_bigram_counts <- lol_bigrams %>% count(bigram, sort=TRUE)
+lol_bigram_counts #counting and sorting bigrams
+```
+
+```{r}
+lol_bigram_counts %>% 
+  filter(str_detect(lol_bigram_counts$bigram,"[0-9]", negate = TRUE)) -> lol_bigram_counts
+
+lol_bigram_counts #removing any bigrams with numbers
+```
+
+```{r}
+lol_filtered_bigrams <- lol_bigram_counts %>%
+                  filter(n >= 4)
+lol_filtered_bigrams #sorting remaining bigrams with a frequency of 4 or more
+```
+
+```{r}
+lol_separated_bigrams <- lol_filtered_bigrams %>% 
+  select("bigram") %>%
+  separate(bigram, c("word1", "word2"), sep = " ") 
+lol_separated_bigrams #separating bigrams again, preparing for graphical representation
+```
+
+```{r}
+
+lol_bigram_graph <- lol_separated_bigrams %>%
+                  graph_from_data_frame()
+
+lol_bigram_graph  #creating bigram graph
+```
+
+```{r}
+ggraph(lol_bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+```
+
 
 ## Step 5: Feature selection
 

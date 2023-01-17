@@ -1,3 +1,11 @@
+---
+title: "World of Warcraft Analysis"
+output: 
+  R_markdown:
+   toc: true
+   toc_float: true
+---
+
 # Pro Data Scientists - Applied Predictive Modelling Project
 
 ### Team members
@@ -11,6 +19,7 @@ Michal Jedruszczak (21440496)
 # Initial set-up
 
 ## Libraries to use
+
 ```{r}
 install.packages("dplyr")
 install.packages("ggplot2")
@@ -31,12 +40,11 @@ library(igraph)
 library(ggraph)
 ```
 
-
-
 # World of Warcraft Cyberbullying Dataset analysis
 
 ## Step 1: Problem statement
-World of Warcraft is a popular MMORPG (Massively multiplayer online role-playing game) video game with millions of user every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, World of Warcraft however is especially toxic and is often ranked as one of the most toxic gaming community’s today. In a survey by ADL (Anti-Defamation League) it was found 66% of adults ages 18-45 have been harassed/bullied in World of Warcraft in 2021.
+
+World of Warcraft is a popular MMORPG (Massively multiplayer online role-playing game) video game with millions of user every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, World of Warcraft however is especially toxic and is often ranked as one of the most toxic gaming community's today. In a survey by ADL (Anti-Defamation League) it was found 66% of adults ages 18-45 have been harassed/bullied in World of Warcraft in 2021.
 
 The objective of this project is to create a model that will be able to detect cyberbullying/toxicity. By using the World of Warcraft dataset provided to us it will allow the model to have reference for comments deemed as bullying.
 
@@ -46,8 +54,8 @@ Currently most video games have an option to filter chat, however this only cens
 
 ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (adl.org)
 
-
 ## Step 2: Importing data
+
 ```{r}
 wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
@@ -102,7 +110,6 @@ bullying_wow
 
 For this data set 43.8% of the posts are labeled as bullying.
 
-
 ## Step 3: Cleaning the data
 
 ## Step 4: EDA
@@ -140,7 +147,6 @@ wordcloud(wow_counts$word, wow_counts$n,
 ```
 
 ```{r}
-
 wow_bigrams <- tibble(txt = posts_wow$html_message) %>% 
   unnest_tokens(bigram, txt, token = "ngrams", n = 2)
 wow_bigrams #split original tibble into two-word bigrams
@@ -156,7 +162,6 @@ wow_bigrams #separating them out for easier cleaning
 wow_bigrams <- wow_bigrams %>%
       filter(!word1 %in% stop_words$word) %>%
       filter(!word2 %in% stop_words$word)
-
 wow_bigrams #filtering out unwanted words
 ```
 
@@ -181,7 +186,6 @@ wow_bigram_counts #counting and sorting bigrams
 ```{r}
 wow_bigram_counts %>% 
   filter(str_detect(wow_bigram_counts$bigram,"[0-9]", negate = TRUE)) -> wow_bigram_counts
-
 wow_bigram_counts #removing any bigrams with numbers
 ```
 
@@ -199,10 +203,8 @@ wow_separated_bigrams #separating bigrams again, preparing for graphical represe
 ```
 
 ```{r}
-
 wow_bigram_graph <- wow_separated_bigrams %>%
                   graph_from_data_frame()
-
 wow_bigram_graph #creating bigram graph
 ```
 
@@ -212,7 +214,6 @@ ggraph(wow_bigram_graph, layout = "fr") +
   geom_node_point() +
   geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 ```
-
 
 ## Step 5: Feature selection
 
@@ -224,5 +225,8 @@ ggraph(wow_bigram_graph, layout = "fr") +
 
 # Individual contributions
 
+Michal Jedruszczak - In this project I was responsible for the preliminary EDA and the final EDA. I also created the contents section and made sure that all of the references were in MMU Harvard format.
+
 # References
-Bretschneider, Uwe and Peters, Ralf, "DETECTING CYBERBULLYING IN ONLINE COMMUNITIES" (2016). Research Papers. Paper 61. http://aisel.aisnet.org/ecis2016_rp/61
+
+Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>

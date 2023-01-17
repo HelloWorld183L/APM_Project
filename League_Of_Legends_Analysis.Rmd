@@ -1,3 +1,12 @@
+---
+title: "League of Legends Analysis"
+output: 
+  R_markdown:
+   toc: true
+   toc_float: true
+---
+
+
 # Pro Data Scientists - Applied Predictive Modelling Project
 
 ### Team members
@@ -216,4 +225,4 @@ ggraph(lol_bigram_graph, layout = "fr") +
 # References
 (Note: This should be in Harvard MMU referencing style)
 
-Bretschneider, Uwe and Peters, Ralf, "DETECTING CYBERBULLYING IN ONLINE COMMUNITIES" (2016). Research Papers. Paper 61. http://aisel.aisnet.org/ecis2016_rp/61
+Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>

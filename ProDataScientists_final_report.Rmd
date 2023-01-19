@@ -11,15 +11,13 @@ editor_options:
     wrap: 72
 ---
 
-# Pro Data Scientists - Applied Predictive Modelling Project
+# Team members
 
-### Team members
+Leon Harper (21385662)
 
-#### Leon Harper (21385662)
+Thomas Newton (21365654)
 
-#### Thomas Newton (21365654)
-
-#### Michal Jedruszczak (21440496)
+Michal Jedruszczak (21440496)
 
 These are the team members for the group project.
 
@@ -85,9 +83,7 @@ cat("\014")
 
 Run the above code block to import the required libraries.
 
-# World of Warcraft Cyberbullying Dataset analysis
-
-## Step 1: Problem statement
+# Step 1: Problem statement
 
 World of Warcraft is a popular MMORPG (Massively multiplayer online
 role-playing game) video game with millions of user every month. Due to
@@ -112,7 +108,7 @@ Currently most video games have an option to filter chat, however this
 only censors certain words/phrases. Our model will be able to detect
 strings of words rather than just certain ones.
 
-## Step 2: Importing data
+# Step 2: Importing data
 
 ```{r}
 wow_posts_df <- read.csv("Data/posts_wow.csv")
@@ -129,12 +125,12 @@ used the table export wizard to export the SQL table data into csv files
 using custom SQL as the MySQL Workbench Table Export Wizard doesn't
 export all of the data properly.
 
-## Step 2.5: Preliminary EDA
+# Step 2.5: Preliminary EDA
 
 We are doing a preliminary EDA in order to understand how we should
 clean the data and the kind of data that we are dealing with.
 
-### League of Legends analysis
+## League of Legends analysis
 
 ```{r}
 summary(lol_posts_df)
@@ -153,7 +149,7 @@ nrow(unique(lol_topics))
 
 This data set has a total of 17 different topics.
 
-### World of Warcraft analysis
+## World of Warcraft analysis
 
 In our World of Warcraft posts dataset, we are given 354 rows of 5
 features: topic_id, post_number, author, html_message and timestamp. For
@@ -196,7 +192,7 @@ nrow(unique(wow_topics))
 
 This data set has a total of 23 different topics.
 
-## Step 3: Cleaning the data / Pre-processing
+# Step 3: Cleaning the data / Pre-processing
 
 For pre-processing, we decided to merge the datasets as they are
 essentially identical to each other in terms of structure and we
@@ -435,9 +431,9 @@ We export the training and test data to make steps such as model
 building and EDA easier and more convenient as it can take time to
 pre-process the data (especially on slower computers).
 
-## Step 4: EDA
+# Step 4: EDA
 
-### League of Legends analysis
+## League of Legends analysis
 
 ```{r}
 posts_df %>% filter(dataset == "LoL") -> lol_posts
@@ -554,7 +550,7 @@ Additionally, using a bigram representation allowed us to easily identify any un
   
 In summary, using a bigram representation was a valuable tool for our exploratory data analysis, as it helped us to quickly gain a better understanding of our dataset by identifying patterns and themes, and also helped us to identify any unusual or unexpected combinations of words that might be present in the HTML message data.
   
-### World of Warcraft analysis
+## World of Warcraft analysis
 
 ```{r}
 wow_posts <- posts_df %>% filter(dataset == "WoW")
@@ -667,9 +663,9 @@ ggraph(wow_bigram_graph, layout = "fr") +
 
 The bigram representation helped us to identify the most common two-word phrases used in the chat. This allowed us to see the distribution of words and understand how players were communicating with each other. For example, the phrase "commit suicide" can be seen in the bigram - messages with this phrase often were flagged as cyberbulling.
 
-## Step 5: Predictive modelling
+# Step 5: Predictive modelling
 
-### Initial setup
+## Initial setup
 
 ```{r}
 train_balanced$is_bullying = as.factor(train_balanced$is_bullying)
@@ -678,7 +674,7 @@ test_balanced$is_bullying = as.factor(test_balanced$is_bullying)
 train_control = trainControl(method = "cv", number = 5)
 ```
 
-### SVM
+## SVM
 
 ```{r}
 set.seed(42)
@@ -693,7 +689,7 @@ svm_time_taken <- svm_toc$toc - svm_toc$tic
 svm_pred_y = predict(svm_model, test_balanced)
 ```
 
-### MLP
+## MLP
 
 ```{r}
 set.seed(42)
@@ -706,7 +702,7 @@ mlp_time_taken <- mlp_toc$toc - mlp_toc$tic
 mlp_pred_y = predict(mlp_model, test_balanced)
 ```
 
-### glmnet
+## glmnet
 
 ```{r}
 set.seed(42)
@@ -720,7 +716,7 @@ glmnet_time_taken <- glmnet_toc$toc - glmnet_toc$tic
 glmnet_pred_y = predict(glmnet_model, test_balanced)
 ```
 
-## Step 6: Hyperparameter Tuning
+# Step 6: Hyperparameter Tuning
 
 ```{r}
 random_train_control_grid = caret::trainControl(method="cv", number=3, search="random")
@@ -732,7 +728,7 @@ occur from an uneven distribution of knowledge for the different models
 trained (i.e. we thought that a random grid search would be much more
 consistent when comparing tuned models).
 
-### SVM Linear kernel
+## SVM Linear kernel
 
 ```{r}
 set.seed(42)
@@ -746,7 +742,7 @@ svm_linear_tuned_time_taken <- svm_linear_tuned_toc$toc - svm_linear_tuned_toc$t
 svm_tuned_pred_y = predict(svm_linear_tuned, test_balanced)
 ```
 
-### SVM Polynomial kernel
+## SVM Polynomial kernel
 
 ```{r}
 set.seed(42)
@@ -761,7 +757,7 @@ svm_poly_tuned_time_taken = svm_poly_toc$toc - svm_poly_toc$tic
 svm_poly_pred_y = predict(svm_model_poly, test_balanced)
 ```
 
-### SVM RBF Kernel
+## SVM RBF Kernel
 
 ```{r}
 set.seed(42)
@@ -777,7 +773,7 @@ svm_rbf_tuned_time_taken = svm_rbf_toc$toc - svm_rbf_toc$tic
 svm_rbf_pred_y = predict(svm_model_rbf, test_balanced)
 ```
 
-### MLP Tuned
+## MLP Tuned
 
 ```{r}
 set.seed(42)
@@ -792,7 +788,7 @@ mlp_tuned_time_taken = mlp_toc$toc - mlp_toc$tic
 mlp_tuned_pred_y = predict(mlp_model_tuned, test_balanced)
 ```
 
-### GLMNET Tuned
+## GLMNET Tuned
 
 ```{r}
 set.seed(42)
@@ -806,7 +802,7 @@ glm_tuned_time_taken <- glm_tuned_toc$toc - glm_tuned_toc$tic
 glm_tuned_pred_y = predict(glm_tuned_model, test_balanced)
 ```
 
-## Step 7: Evaluation
+# Step 7: Evaluation
 
 For this evaluation, we wanted a comprehensive evaluation of the models
 involved using key metrics such as recall, precision, f1 score, the time
@@ -829,7 +825,7 @@ train each model as this would help identify production costs for each
 model (the models would take much longer to train on big batches of
 data).
 
-### Creating confusion matrices
+## Creating confusion matrices
 
 ```{r}
 svm_confusion_matrix <- caret::confusionMatrix(svm_pred_y, test_balanced$is_bullying)
@@ -890,7 +886,7 @@ has actually decreased the accuracy of the model.
 glm_tuned_cf_matrix
 ```
 
-### ROC Curves
+## ROC Curves
 
 ```{r}
 plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
@@ -907,13 +903,13 @@ plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, mode
 }
 ```
 
-#### Non-tuned models
+### Non-tuned models
 
 ```{r}
 plot_roc_curves(svm_pred_y, mlp_pred_y, glmnet_pred_y, c("SVM", "MLP", "GLMNET"))
 ```
 
-#### Comparing tuned SVM models
+### Comparing tuned SVM models
 
 ```{r}
 plot_roc_curves(svm_tuned_pred_y, svm_poly_pred_y, svm_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
@@ -923,7 +919,7 @@ It would appear that the polynomial kernel is most suitable for bullying
 classification. We will compare this SVM model that uses the polynomial
 kernel with other models.
 
-#### Tuned models
+### Tuned models
 
 ```{r}
 plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
@@ -932,9 +928,7 @@ plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly
 This code creates ROC curves for each model with different colours. We
 then print the AUC values for each curve.
 
-### Table of metrics
-
-#### Calculating metrics
+## Table of metrics
 
 For each model, we will be calculating the evaluation metrics we will be
 using (time taken, precision, sensitivity, f1 score, AUC) to create a
@@ -995,11 +989,14 @@ We output the table results to a csv file to make it easy to share
 results with other group members.
 
 # Individual contributions
+Thomas Newton
+INSERT HERE
 
-## Thomas Newton
+Leon Harper
+INSERT HERE
 
-INSERT HERE \## Leon Harper INSERT HERE \## Michal Jedruszczak In this
-project I was responsible for the preliminary EDA and the final EDA. I
+Michal Jedruszczak
+In this project I was responsible for the preliminary EDA and the final EDA. I
 also created the contents section and made sure that all of the
 references were in MMU Harvard format.
 

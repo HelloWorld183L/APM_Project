@@ -401,15 +401,108 @@ ggraph(lol_bigram_graph, layout = "fr") +
 
 ### World of Warcraft analysis
 ```{r}
+wow_posts <- posts_df %>% filter(dataset == "WoW")
 posts_df %>% filter(is_bullying == 1) -> bullying_wow
 bullying_wow
 ```
 
 ```{r}
-nrow(bullying_wow) / nrow(wow_posts_df) * 100
+nrow(bullying_wow) / nrow(wow_posts) * 100
 ```
 
 For this data set 2.4% of the posts are labeled as bullying.
+
+```{r}
+wow_tibble <- tibble(txt = wow_posts$html_message)
+wow_tibble #transforming the HTML messages into a tibble for an easier workflow
+```
+
+```{r}
+wow_tibble <- wow_tibble%>% 
+    mutate(linenumber = row_number()) %>%
+ unnest_tokens(word, txt) %>% anti_join(stop_words)
+wow_tibble #splitting tibble by words and removing stop words
+```
+
+```{r}
+wow_counts <- wow_tibble %>% count(word, sort=TRUE)
+wow_counts #sorting and counting the remaining words
+```
+
+```{r}
+wordcloud(wow_counts$word, wow_counts$n, 
+          min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+  #creating word cloud
+```
+
+```{r}
+wow_bigrams <- tibble(txt = wow_posts$html_message) %>% 
+  unnest_tokens(bigram, txt, token = "ngrams", n = 2)
+wow_bigrams #split original tibble into two-word bigrams
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+      separate(bigram, c("word1", "word2"), sep = " ") 
+wow_bigrams #separating them out for easier cleaning
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+      filter(!word1 %in% stop_words$word) %>%
+      filter(!word2 %in% stop_words$word)
+wow_bigrams #filtering out unwanted words
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+            filter(!is.na(word1)) %>% 
+            filter(!is.na(word2))
+wow_bigrams #removing null values
+```
+
+```{r}
+wow_bigrams <- wow_bigrams %>%
+            unite(bigram, word1, word2, sep=" ")
+wow_bigrams #joining the words back together
+```
+
+```{r}
+wow_bigram_counts <- wow_bigrams %>% count(bigram, sort=TRUE)
+wow_bigram_counts #counting and sorting bigrams
+```
+
+```{r}
+wow_bigram_counts %>% 
+  filter(str_detect(wow_bigram_counts$bigram,"[0-9]", negate = TRUE)) -> wow_bigram_counts
+wow_bigram_counts #removing any bigrams with numbers
+```
+
+```{r}
+wow_filtered_bigrams <- wow_bigram_counts %>%
+                  filter(n >= 4)
+wow_filtered_bigrams #sorting remaining bigrams with a frequency of 4 or more
+```
+
+```{r}
+wow_separated_bigrams <- wow_filtered_bigrams %>% 
+  select("bigram") %>%
+  separate(bigram, c("word1", "word2"), sep = " ") 
+wow_separated_bigrams #separating bigrams again, preparing for graphical representation
+```
+
+```{r}
+wow_bigram_graph <- wow_separated_bigrams %>%
+                  graph_from_data_frame()
+wow_bigram_graph #creating bigram graph
+```
+
+```{r}
+ggraph(wow_bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+```
 
 ## Step 5: Predictive modelling
 
@@ -461,12 +554,11 @@ rf_pred_y = predict(rf_model, test_balanced)
 ```
 
 ## Step 7: Hyperparameter Tuning
+```{r}
+train_control_grid = caret::trainControl(method = "cv", number = 5, search = "grid")
+```
 ### SVM Linear kernel
 ```{r}
-
-#Setting control grid method
-train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
-
 set.seed(50)
 # Customizing the tuning grid
 svm_linear_grid <-  expand.grid(C = c(0.1, 1, 10, 50, 100, 500, 1000))
@@ -475,7 +567,7 @@ svm_linear_grid <-  expand.grid(C = c(0.1, 1, 10, 50, 100, 500, 1000))
 train_df$is_bullying = as.factor(train_df$is_bullying)
 
 # training a svmLinear classification model while tuning parameters
-svm_linear_tuned = caret::train(is_bullying~ ., data = train_df, method = "svmLinear", trControl = train_control, tuneGrid = svm_linear_grid)
+svm_linear_tuned = caret::train(is_bullying~ ., data = train_df, method = "svmLinear", trControl = train_control_grid, tuneGrid = svm_linear_grid)
 
 # summarising the results
 print(svm_linear_tuned)
@@ -483,9 +575,6 @@ print(svm_linear_tuned)
 
 ### SVM Polynomial kernel
 ```{r}
-#Setting control grid method
-train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
-
 set.seed(50)
 # Customsing the tuning grid
 svm_poly_grid <-  expand.grid(degree = 4,
@@ -496,7 +585,7 @@ svm_poly_grid <-  expand.grid(degree = 4,
 train_df$is_bullying = as.factor(train_df$is_bullying)
 
 # training a svmLinear classification model while tuning parameters
-svm_model_poly = caret::train(is_bullying~ ., data = train_df, method = "svmPoly", trControl = train_control, tuneGrid = svm_poly_grid)
+svm_model_poly = caret::train(is_bullying~ ., data = train_df, method = "svmPoly", trControl = train_control_grid, tuneGrid = svm_poly_grid)
 
 # summarising the results
 print(svm_model_poly)
@@ -518,7 +607,7 @@ svm_rbf_grid <-  expand.grid(sigma = 1,
 train_df$is_bullying = as.factor(train_df$is_bullying)
 
 # training a svmLinear classification model while tuning parameters
-svm_model_rbf = caret::train(is_bullying~ ., data = train_df, method = "svmRadial", trControl = train_control, tuneGrid = svm_rbf_grid)
+svm_model_rbf = caret::train(is_bullying~ ., data = train_df, method = "svmRadial", trControl = train_control_grid, tuneGrid = svm_rbf_grid)
 
 # summarizing the results
 print(svm_model_rbf)
@@ -527,10 +616,6 @@ print(svm_model_rbf)
 ### MLP Tuned
 ```{r}
 # MLP Hyperparameter Tuning
-
-#Setting control grid method
-train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
-
 set.seed(50)
 # Customizing the tuning grid
 mlpGrid <-  expand.grid(size = 1)

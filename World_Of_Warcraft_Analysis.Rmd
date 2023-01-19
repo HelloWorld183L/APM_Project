@@ -288,8 +288,6 @@ bullying_lol
 
 ```{r}
 nrow(bullying_lol) / nrow(lol_posts) * 100
-
-#100 * count(bullying_lol) / count(lol_posts)#percentage of posts marked as cyberbullying
 ```
 For this data set 1.53% of the posts are labeled as bullying.
 
@@ -588,7 +586,6 @@ svm_rbf_pred_y = predict(svm_model_rbf, test_balanced)
 
 ### MLP Tuned
 ```{r}
-# MLP Hyperparameter Tuning
 set.seed(42)
 
 tic()
@@ -617,18 +614,30 @@ glm_tuned_pred_y = predict(rf_model, test_balanced)
 ## Step 7: Evaluation
 ### Creating confusion matrices
 ```{r}
-svm_confusion_matrix <- caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
-mlp_confusion_matrix <- caret::confusionMatrix(data=mlp_pred_y, reference=test_balanced$is_bullying, mode="everything")
-glm_confusion_matrix <- caret::confusionMatrix(data=glmnet_pred_y, reference=test_balanced$is_bullying, mode="everything")
+svm_confusion_matrix <- caret::confusionMatrix(svm_pred_y, test_balanced$is_bullying)
+mlp_confusion_matrix <- caret::confusionMatrix(mlp_pred_y, test_balanced$is_bullying)
+glm_confusion_matrix <- caret::confusionMatrix(glmnet_pred_y, test_balanced$is_bullying)
 ```
 
 ```{r}
-svm_linear_tuned_cf_matrix <- caret::confusionMatrix(data=svm_tuned_pred_y, reference=test_balanced$is_bullying, mode="everything")
-svm_poly_cf_matrix <- caret::confusionMatrix(data=svm_poly_pred_y, reference=test_balanced$is_bullying, mode="everything")
-svm_rbf_cf_matrix <- caret::confusionMatrix(data=svm_rbf_pred_y, reference=test_balanced$is_bullying, mode="everything")
+svm_confusion_matrix
+```
 
-mlp_tuned_cf_matrix <- caret::confusionMatrix(data=mlp_tuned_pred_y, reference=test_balanced$is_bullying, mode="everything")
-glm_tuned_cf_matrix <- caret::confusionMatrix(data=glm_tuned_pred_y, reference=test_balanced$is_bullying, mode="everything")
+```{r}
+mlp_confusion_matrix
+```
+
+```{r}
+glm_confusion_matrix
+```
+
+```{r}
+svm_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_pred_y, test_balanced$is_bullying)
+svm_poly_cf_matrix <- caret::confusionMatrix(svm_poly_pred_y, test_balanced$is_bullying)
+svm_rbf_cf_matrix <- caret::confusionMatrix(svm_rbf_pred_y, test_balanced$is_bullying)
+
+mlp_tuned_cf_matrix <- caret::confusionMatrix(mlp_tuned_pred_y, test_balanced$is_bullying)
+glm_tuned_cf_matrix <- caret::confusionMatrix(glm_tuned_pred_y, test_balanced$is_bullying)
 ```
 Here we create confusion matrices to get values such as F1 score, precision and recalls. When we use "mode="everything" ", we get additional values such as F1 Score for a better overview of the model performance.
 
@@ -653,53 +662,42 @@ glm_tuned_cf_matrix
 ```
 
 ### ROC Curves
+```{r}
+plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
+  model_1_pred_y <- as.numeric(levels(model_1_pred_y))[model_1_pred_y]
+  model_2_pred_y <- as.numeric(levels(model_2_pred_y))[model_2_pred_y]
+  model_3_pred_y <- as.numeric(levels(model_3_pred_y))[model_3_pred_y]
+
+  par(pty="s")
+  model_1_roc <- roc(test_balanced$is_bullying~model_1_pred_y, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
+  model_2_roc <- roc(test_balanced$is_bullying~model_2_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, add=TRUE)
+  model_3_roc <- roc(test_balanced$is_bullying, model_3_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, add=TRUE)
+  
+  legend("bottomright", legend=model_names, col=c("red", "blue", "green"), lwd=4)
+}
+```
+
 #### Non-tuned models
 ```{r}
-converted_pred_y_svm <- as.numeric(levels(svm_pred_y))[svm_pred_y]
-converted_pred_y_mlp <- as.numeric(levels(mlp_pred_y))[mlp_pred_y]
-converted_pred_y_glmnet <- as.numeric(levels(rf_pred_y))[glmnet_pred_y]
-
-par(pty="s")
-svm_roc <- roc(test_balanced$is_bullying~converted_pred_y_svm, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
-mlp_roc <- roc(test_balanced$is_bullying~converted_pred_y_mlp, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, legacy.axes=TRUE, add=TRUE)
-glmnet_roc <- roc(test_balanced$is_bullying, converted_pred_y_glmnet, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, legacy.axes=TRUE, add=TRUE)
-
-legend("bottomright", legend=c("SVM", "MLP", "GLMNET"), col=c("red", "blue", "green"), lwd=4)
+plot_roc_curves(svm_pred_y, mlp_pred_y, glmnet_pred_y, c("SVM", "MLP", "GLMNET"))
 ```
 
 #### Comparing tuned SVM models
 ```{r}
-converted_pred_y_svm_linear_tuned <- as.numeric(levels(svm_tuned_pred_y))[svm_tuned_pred_y]
-converted_pred_y_svm_poly_tuned<- as.numeric(levels(svm_poly_pred_y))[svm_poly_pred_y]
-converted_pred_y_svm_rbf_tuned <- as.numeric(levels(svm_rbf_pred_y))[svm_rbf_pred_y]
-
-par(pty="s")
-svm_linear_roc <- roc(test_balanced$is_bullying~converted_pred_y_svm_linear_tuned, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
-svm_poly_roc <- roc(test_balanced$is_bullying~converted_pred_y_svm_poly_tuned, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, legacy.axes=TRUE, add=TRUE)
-svm_rbf_roc <- roc(test_balanced$is_bullying, converted_pred_y_svm_rbf_tuned, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, legacy.axes=TRUE, add=TRUE)
-
-legend("bottomright", legend=c("SVM Linear", "SVM Poly", "SVM RBF"), col=c("red", "blue", "green"), lwd=4)
+plot_roc_curves(svm_tuned_pred_y, svm_poly_pred_y, svm_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
 ```
 It would appear that the polynomial kernel is most suitable for bullying classification. We will compare this SVM model that uses the polynomial kernel with other models.
 
 #### Tuned models
 ```{r}
-converted_pred_y_mlp_tuned <- as.numeric(levels(mlp_tuned_pred_y))[mlp_tuned_pred_y]
-converted_pred_y_glmnet_tuned <- as.numeric(levels(glm_tuned_pred_y))[glm_tuned_pred_y]
-
-par(pty="s")
-svm_poly_roc <- roc(test_balanced$is_bullying~converted_pred_y_svm_poly_tuned, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
-mlp_tuned_roc <- roc(test_balanced$is_bullying~converted_pred_y_mlp, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, legacy.axes=TRUE, add=TRUE)
-glmnet_tuned_roc <- roc(test_balanced$is_bullying, converted_pred_y_rf, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, legacy.axes=TRUE, add=TRUE)
-
-legend("bottomright", legend=c("SVM Poly", "MLP Tuned", "GLMNET"), col=c("red", "blue", "green"), lwd=4)
+plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
 ```
 
 This code creates ROC curves for each model with different colours. We then print the AUC values for each curve.
 
 ### Table of metrics
 #### Calculating metrics
-For each model, we will be calculating the evaluation metrics we will be using (time taken, precision, sensitivity, f1 score, AUC) to create a table of metrics which can be used to evaluate each model. We are acquiring the time taken to train each model to see how practical the models would be in a real world project.
+For each model, we will be calculating the evaluation metrics we will be using (time taken, precision, sensitivity, f1 score, AUC) to create a table of metrics which can be used to evaluate each model. We are acquiring the time taken to train each model to see how practical the models would be if the models were to be trained continuously with new data in terms of computation. While it doesn't take that long to train the models with the sample data, it would take much longer if there was more data.
 
 ```{r}
 svm_precision <- precision(svm_tuned_pred_y, test_balanced$is_bullying)

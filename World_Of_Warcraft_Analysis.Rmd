@@ -28,6 +28,8 @@ install.packages("RSNNS")
 install.packages("randomForest")
 install.packages("pROC")
 install.packages("tictoc")
+install.packages("wordcloud")
+install.packages("ggraph")
 cat("\014")
 ```
 Run the above block to install the packages necessary to run the code in the project. "cat("\014)" is used to clear the console output for presentation purposes.
@@ -49,6 +51,8 @@ library(RSNNS)
 library(randomForest)
 library(pROC)
 library(tictoc)
+library(wordcloud)
+library(ggraph)
 cat("\014")
 ```
 Run the above code block to import the required libraries.
@@ -78,6 +82,60 @@ This imports the required data for the project. The data was exported from an SQ
 
 ## Step 2.5: Preliminary EDA
 We are doing a preliminary EDA in order to understand how we should clean the data and the kind of data that we are dealing with.
+
+### League of Legends analysis
+```{r}
+summary(lol_posts_df)
+```
+
+```{r}
+nrow(lol_posts_df)
+```
+
+There are 16867 data points in the League of Legends posts data.
+
+```{r}
+lol_posts_df %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
+nrow(unique(lol_topics))
+```
+This data set has a total of 17 different topics.
+
+### World of Warcraft analysis
+In our World of Warcraft posts dataset, we are given 354 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional WoW annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. This information has been combined into a single file -- clean_posts_balanced_sample.csv.
+
+Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
+
+Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
+
+Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations data set, all values but post number are categorical.
+
+```{r}
+summary(wow_posts_df)
+```
+
+```{r}
+nrow(wow_posts_df)
+```
+
+There are 16978 data points.
+
+```{r}
+wow_posts_df %>% select("topic_id") -> wow_topics #gets all unique wow_topics from the dataset
+nrow(unique(wow_topics))
+```
+
+This data set has a total of 23 different topics.
+
+```{r}
+wow_posts_df %>% filter(is_bullying == 1) -> bullying_wow
+bullying_wow
+```
+
+```{r}
+100 * count(bullying_wow)/count(posts_wow)#percentage of posts marked as cyberbullying
+```
+
+For this data set 43.8% of the posts are labeled as bullying.
 
 ## Step 3: Cleaning the data / Pre-processing
 ```{r}
@@ -234,10 +292,126 @@ write.csv(posts_data, file="Data/clean_posts_dtm.csv")
 We export the training and test data to make model building easier.
 
 ## Step 4: EDA
+### League of Legends analysis
+```{r}
+posts_df %>% filter(dataset == "LoL") -> lol_posts
+lol_posts %>% filter(is_bullying == 1) -> bullying_lol
+bullying_lol
+```
 
-## Step 5: Feature selection
+```{r}
+nrow(bullying_lol) / nrow(lol_posts) * 100
 
-## Step 6: Predictive modelling
+#100 * count(bullying_lol) / count(lol_posts)#percentage of posts marked as cyberbullying
+```
+For this data set 1.53% of the posts are labeled as bullying.
+
+```{r}
+lol_tibble <- tibble(txt = lol_posts$html_message)
+lol_tibble #transforming the HTML messages into a tibble for an easier workflow
+```
+
+```{r}
+lol_tibble <- lol_tibble%>% 
+    mutate(linenumber = row_number()) %>%
+ unnest_tokens(word, txt) %>% anti_join(stop_words)
+lol_tibble #splitting tibble by words
+```
+
+```{r}
+lol_counts <- lol_tibble %>% count(word, sort=TRUE)
+lol_counts #sorting words by count
+```
+
+```{r}
+wordcloud(lol_counts$word, lol_counts$n, 
+          min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+  #creating a word cloud out of sorted list
+```
+
+```{r}
+lol_bigrams <- tibble(txt = lol_posts$html_message) %>% 
+  unnest_tokens(bigram, txt, token = "ngrams", n = 2)
+lol_bigrams
+#split original tibble into two-word bigrams
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+      separate(bigram, c("word1", "word2"), sep = " ") 
+lol_bigrams #separating them out for easier cleaning
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+      filter(!word1 %in% stop_words$word) %>%
+      filter(!word2 %in% stop_words$word)
+lol_bigrams #filtering out unwanted words
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+            filter(!is.na(word1)) %>% 
+            filter(!is.na(word2))
+lol_bigrams #removing null values
+```
+
+```{r}
+lol_bigrams <- lol_bigrams %>%
+            unite(bigram, word1, word2, sep=" ")
+lol_bigrams #joining the words back together
+```
+
+```{r}
+lol_bigram_counts <- lol_bigrams %>% count(bigram, sort=TRUE)
+lol_bigram_counts #counting and sorting bigrams
+```
+
+```{r}
+lol_bigram_counts %>% 
+  filter(str_detect(lol_bigram_counts$bigram,"[0-9]", negate = TRUE)) -> lol_bigram_counts
+lol_bigram_counts #removing any bigrams with numbers
+```
+
+```{r}
+lol_filtered_bigrams <- lol_bigram_counts %>%
+                  filter(n >= 4)
+lol_filtered_bigrams #sorting remaining bigrams with a frequency of 4 or more
+```
+
+```{r}
+lol_separated_bigrams <- lol_filtered_bigrams %>% 
+  select("bigram") %>%
+  separate(bigram, c("word1", "word2"), sep = " ") 
+lol_separated_bigrams #separating bigrams again, preparing for graphical representation
+```
+
+```{r}
+lol_bigram_graph <- lol_separated_bigrams %>%
+                  graph_from_data_frame()
+lol_bigram_graph  #creating bigram graph
+```
+
+```{r}
+ggraph(lol_bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+```
+
+### World of Warcraft analysis
+```{r}
+posts_df %>% filter(is_bullying == 1) -> bullying_wow
+bullying_wow
+```
+
+```{r}
+nrow(bullying_wow) / nrow(wow_posts_df) * 100
+```
+
+For this data set 2.4% of the posts are labeled as bullying.
+
+## Step 5: Predictive modelling
 
 ### Initial setup
 ```{r}
@@ -284,6 +458,91 @@ rf_toc <- toc(quiet=T)
 
 rf_time_taken <- rf_toc$toc - rf_toc$tic
 rf_pred_y = predict(rf_model, test_balanced)
+```
+
+## Step 7: Hyperparameter Tuning
+### SVM Linear kernel
+```{r}
+
+#Setting control grid method
+train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
+
+set.seed(50)
+# Customizing the tuning grid
+svm_linear_grid <-  expand.grid(C = c(0.1, 1, 10, 50, 100, 500, 1000))
+
+#Setting the df as a factor
+train_df$is_bullying = as.factor(train_df$is_bullying)
+
+# training a svmLinear classification model while tuning parameters
+svm_linear_tuned = caret::train(is_bullying~ ., data = train_df, method = "svmLinear", trControl = train_control, tuneGrid = svm_linear_grid)
+
+# summarising the results
+print(svm_linear_tuned)
+```
+
+### SVM Polynomial kernel
+```{r}
+#Setting control grid method
+train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
+
+set.seed(50)
+# Customsing the tuning grid
+svm_poly_grid <-  expand.grid(degree = 4,
+                            scale = 1,
+                            C = c(0.1, 1, 10, 50, 100, 500, 1000))
+
+#Setting the df as a factor
+train_df$is_bullying = as.factor(train_df$is_bullying)
+
+# training a svmLinear classification model while tuning parameters
+svm_model_poly = caret::train(is_bullying~ ., data = train_df, method = "svmPoly", trControl = train_control, tuneGrid = svm_poly_grid)
+
+# summarising the results
+print(svm_model_poly)
+```
+
+### SVM RBF Kernel
+```{r}
+# SVM Hyperparameter Tuning (polynomial kernel)
+
+#Setting control grid method
+train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
+
+set.seed(50)
+# Customizing the tuning grid
+svm_rbf_grid <-  expand.grid(sigma = 1,
+                            C = c(0.1, 1, 10, 50, 100, 500, 1000))
+
+#Setting the df as a factor
+train_df$is_bullying = as.factor(train_df$is_bullying)
+
+# training a svmLinear classification model while tuning parameters
+svm_model_rbf = caret::train(is_bullying~ ., data = train_df, method = "svmRadial", trControl = train_control, tuneGrid = svm_rbf_grid)
+
+# summarizing the results
+print(svm_model_rbf)
+```
+
+### MLP Tuned
+```{r}
+# MLP Hyperparameter Tuning
+
+#Setting control grid method
+train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
+
+set.seed(50)
+# Customizing the tuning grid
+mlpGrid <-  expand.grid(size = 1)
+
+#Setting the df as a factor
+train_df$is_bullying = as.factor(train_df$is_bullying)
+
+# training a svmLinear classification model while tuning parameters
+mlp_model_tuned = caret::train(is_bullying~ ., data = train_df, method = "mlp", trControl = train_control, tuneGrid = mlpGrid)
+
+# summarising the results
+print(mlp_model_tuned)
 ```
 
 ## Step 7: Evaluation

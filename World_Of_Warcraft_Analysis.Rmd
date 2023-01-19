@@ -700,51 +700,30 @@ This code creates ROC curves for each model with different colours. We then prin
 For each model, we will be calculating the evaluation metrics we will be using (time taken, precision, sensitivity, f1 score, AUC) to create a table of metrics which can be used to evaluate each model. We are acquiring the time taken to train each model to see how practical the models would be if the models were to be trained continuously with new data in terms of computation. While it doesn't take that long to train the models with the sample data, it would take much longer if there was more data.
 
 ```{r}
-svm_precision <- precision(svm_tuned_pred_y, test_balanced$is_bullying)
-svm_sensitivity <- sensitivity(svm_tuned_pred_y, test_balanced$is_bullying)
-svm_f1_score <- F_meas(svm_tuned_pred_y, test_balanced$is_bullying)
-svm_auc <- auc(svm_roc)
-
-svm_poly_precision <- precision(svm_poly_pred_y, test_balanced$is_bullying)
-svm_poly_sensitivity <- sensitivity(svm_poly_pred_y, test_balanced$is_bullying)
-svm_poly_f1_score <- F_meas(svm_poly_pred_y, test_balanced$is_bullying)
-svm_poly_auc <- auc(svm_poly_roc)
-
-svm_rbf_precision <- precision(svm_rbf_pred_y, test_balanced$is_bullying)
-svm_rbf_sensitivity <- sensitivity(svm_rbf_pred_y, test_balanced$is_bullying)
-svm_rbf_f1_score <- F_meas(svm_rbf_pred_y, test_balanced$is_bullying)
-svm_rbf_auc <- auc(svm_rbf_roc)
+create_table <- function(prediction_list, time_to_train_c) {
+  Model_Name = names(prediction_list)
+  Precision = c()
+  Sensitivity = c()
+  F1_Score = c()
+  AUC = c()
+  Time_to_Train_secs = time_to_train_c
+  
+  for (prediction_y in prediction_list) {
+    Precision <- append(Precision, precision(prediction_y, test_balanced$is_bullying))
+    Sensitivity <- append(Sensitivity, sensitivity(prediction_y, test_balanced$is_bullying))
+    F1_Score <- append(F1_Score, F_meas(prediction_y, test_balanced$is_bullying))
+    AUC <- append(AUC, auc(test_balanced$is_bullying, as.integer(prediction_y)))
+  }
+  
+  results <- data.frame(Model_Name, Precision, Sensitivity, F1_Score, AUC, Time_to_Train_secs)
+  return(results)
+}
 ```
 
 ```{r}
-mlp_precision <- precision(mlp_pred_y, test_balanced$is_bullying)
-mlp_sensitivity <- sensitivity(mlp_pred_y, test_balanced$is_bullying)
-mlp_f1_score <- F_meas(mlp_pred_y, test_balanced$is_bullying)
-mlp_auc <- auc(mlp_roc)
-
-mlp_tuned_precision <- precision(mlp_tuned_pred_y, test_balanced$is_bullying)
-mlp_tuned_sensitivity <- sensitivity(mlp_tuned_pred_y, test_balanced$is_bullying)
-mlp_tuned_f1_score <- F_meas(mlp_tuned_pred_y, test_balanced$is_bullying)
-mlp_tuned_auc <- auc(mlp_tuned_roc)
-```
-
-```{r}
-glmnet_precision <- precision(glm_tuned_pred_y, test_balanced$is_bullying)
-glmnet_sensitivity <- sensitivity(glm_tuned_pred_y, test_balanced$is_bullying)
-glmnet_f1_score <- F_meas(glm_tuned_pred_y, test_balanced$is_bullying)
-glmnet_auc <- auc(glmnet_tuned_roc)
-```
-
-#### Table
-```{r}
-Model_Name <- c("SVM Linear", "SVM Poly", "SVM RBF", "MLP", "GLMNET")
-Precision <- c(svm_precision, svm_poly_precision, svm_rbf_precision, mlp_precision, glmnet_precision)
-Sensitivity <- c(svm_sensitivity, svm_poly_sensitivity, svm_rbf_sensitivity, mlp_sensitivity, glmnet_sensitivity)
-F1_Score <- c(svm_f1_score, svm_poly_f1_score, svm_rbf_f1_score, mlp_f1_score, glmnet_f1_score)
-AUC <- c(svm_auc, svm_poly_auc, svm_rbf_auc, mlp_auc, glmnet_auc)
-Time_to_Train_secs <- c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_taken, mlp_time_taken, glmnet_time_taken)
-
-results <- data.frame(Model_Name, Precision, Sensitivity, F1_Score, AUC, Time_to_Train_secs)
+prediction_list = list(svm_linear = svm_tuned_pred_y, svm_poly = svm_poly_pred_y, svm_rbf = svm_rbf_pred_y, mlp = mlp_tuned_pred_y, glmnet = glm_tuned_pred_y)
+time_to_train = c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_taken, mlp_time_taken, glmnet_time_taken)
+results = create_table(prediction_list, time_to_train)
 results
 ```
 ### Output evaluation results

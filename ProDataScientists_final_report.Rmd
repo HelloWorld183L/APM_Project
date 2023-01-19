@@ -4,6 +4,7 @@ output:
   pdf_document:
     toc: true
     toc_depth: 4
+    latex_engine: xelatex
 editor_options: 
   markdown: 
     wrap: 72

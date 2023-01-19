@@ -714,7 +714,7 @@ INSERT HERE
 ## Leon Harper
 INSERT HERE
 ## Michal Jedruszczak
-INSERT HERE
+In this project I was responsible for the preliminary EDA and the final EDA. I also created the contents section and made sure that all of the references were in MMU Harvard format.
 
 # References
 Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>

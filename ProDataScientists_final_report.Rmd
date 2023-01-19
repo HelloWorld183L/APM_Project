@@ -742,7 +742,9 @@ time_to_train = c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_
 results = create_table(prediction_list, time_to_train)
 results
 ```
-From these results, it would appear that the glmnet logistic regression model has the greatest performance as it has the greatest F1 score and AUC. It is also relatively quick to train which can reduce costs if deployed in a large-scale system.
+From these results, it would appear that the glmnet logistic regression model has the greatest performance as it has the greatest F1 score (81%) and AUC score. It is also relatively quick to train which can reduce costs if deployed in a large-scale system where the model may be continuously trained with new data. However, the SVM model with a polynomial kernel appears to be slightly better in terms of recall than the glmnet model. However, this difference is very small to where it won't really amount to anything.
+
+We can also see that the mlp model performed the worst as it took a long time to train on a relatively small sample of data (almost 2 minutes) and it has the worst F1 and AUC scores where the F1 score was 66% whilst the AUC was 69%. 
 ### Output evaluation results
 ```{r}
 write.csv(results, "Data/results.csv")

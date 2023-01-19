@@ -1,3 +1,13 @@
+---
+title: "Pro Data Scientists - Applied Predictive Modelling Project"
+output: 
+  R_markdown:
+   toc: true
+   toc_float: true
+---
+
+
+
 # Pro Data Scientists - Applied Predictive Modelling Project
 
 ### Team members
@@ -317,6 +327,10 @@ wordcloud(lol_counts$word, lol_counts$n,
           min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
   #creating a word cloud out of sorted list
 ```
+  
+By using a word cloud to analyse the HTML messages from the League of Legends boards, we have gained several insights into the issue of cyberbullying within the game.
+
+The word helped us to identify the most common words or phrases used in the chat. This allowed us to see if certain language or terminology was frequently used in a negative or bullying context. For example, the words "stupid" and "idiot" were often marked as cyberbullying, which could indicate that players were using those words to mock or belittle others.
 
 ```{r}
 lol_bigrams <- tibble(txt = lol_posts$html_message) %>% 
@@ -388,6 +402,12 @@ ggraph(lol_bigram_graph, layout = "fr") +
   geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 ```
 
+For this project we used a bigram representation to quickly visualize the most common two-word phrases in this large text dataset. This helped us to get a sense of the collocation of words in the data, which gave important insights into the meaning and context of the text.
+
+Additionally, using a bigram representation allowed us to easily identify any unusual or unexpected combinations of words that might be present in the dataset. This was particularly useful when working with unstructured data, as it allowed us to quickly see into some of the relationships between words within the text. By identifying the most common two-word phrases, we were able to see how words were collocating in the dataset, which gave us an idea of how they were being used and the relationships between them. This helped us to identify patterns and themes in the data that would have been difficult to discern by just looking at individual words.
+  
+In summary, using a bigram representation was a valuable tool for our exploratory data analysis, as it helped us to quickly gain a better understanding of our dataset by identifying patterns and themes, and also helped us to identify any unusual or unexpected combinations of words that might be present in the HTML message data.
+  
 ### World of Warcraft analysis
 ```{r}
 wow_posts <- posts_df %>% filter(dataset == "WoW")
@@ -424,6 +444,11 @@ wordcloud(wow_counts$word, wow_counts$n,
   #creating word cloud
 ```
 
+We used a word cloud to quickly visualise the most common words in our large text dataset. This helped us to get a sense of the overall topic and context of the data, as well as identify any patterns or themes that might be present.
+
+Additionally, using a word cloud allowed us to easily identify any outliers or unusual words that might be present in the dataset, which could then be further investigated. This was particularly useful when working with unstructured data, as it allowed us to quickly gain insights without having to manually sift through all of the text. Using a word cloud was a valuable tool in our exploratory data analysis and helped us to quickly gain a better understanding of the dataset.
+  
+  
 ```{r}
 wow_bigrams <- tibble(txt = wow_posts$html_message) %>% 
   unnest_tokens(bigram, txt, token = "ngrams", n = 2)
@@ -492,6 +517,8 @@ ggraph(wow_bigram_graph, layout = "fr") +
   geom_node_point() +
   geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 ```
+
+The bigram representation helped us to identify the most common two-word phrases used in the chat. This allowed us to see the distribution of words and understand how players were communicating with each other. For example, the phrase "commit suicide" can be seen in the bigram - messages with this phrase often were flagged as cyberbulling.
 
 ## Step 5: Predictive modelling
 
@@ -760,6 +787,8 @@ INSERT HERE
 In this project I was responsible for the preliminary EDA and the final EDA. I also created the contents section and made sure that all of the references were in MMU Harvard format.
 
 # References
-Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>
 
-Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (2022) ADL. Anti-Defamation League. Available at: https://www.adl.org/resources/report/hate-no-game-harassment-and-positive-social-experiences-online-games-2021 (Accessed: November 19, 2022). 
+Anti-Defamation League (2022) *Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021* [Online][Accessed: November 19, 2022]
+<https://www.adl.org/resources/report/hate-no-game-harassment-and-positive-social-experiences-online-games-2021>
+  
+Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>

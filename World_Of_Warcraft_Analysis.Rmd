@@ -124,17 +124,6 @@ nrow(unique(wow_topics))
 
 This data set has a total of 23 different topics.
 
-```{r}
-wow_posts_df %>% filter(is_bullying == 1) -> bullying_wow
-bullying_wow
-```
-
-```{r}
-100 * count(bullying_wow)/count(posts_wow)#percentage of posts marked as cyberbullying
-```
-
-For this data set 43.8% of the posts are labeled as bullying.
-
 ## Step 3: Cleaning the data / Pre-processing
 ```{r}
 # Creates dataset column to merge posts and annotations csv files together
@@ -551,7 +540,7 @@ rf_time_taken <- rf_toc$toc - rf_toc$tic
 rf_pred_y = predict(rf_model, test_balanced)
 ```
 
-## Step 7: Hyperparameter Tuning
+## Step 6: Hyperparameter Tuning
 ```{r}
 train_control_grid = caret::trainControl(method = "repeatedcv", number = 5, repeats = 3)
 small_train_control_grid = caret::trainControl(method = "repeatedcv", number = 5, repeats = 1)
@@ -688,4 +677,5 @@ In this project I was responsible for the preliminary EDA and the final EDA. I a
 
 # References
 Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>
+
 Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (2022) ADL. Anti-Defamation League. Available at: https://www.adl.org/resources/report/hate-no-game-harassment-and-positive-social-experiences-online-games-2021 (Accessed: November 19, 2022). 

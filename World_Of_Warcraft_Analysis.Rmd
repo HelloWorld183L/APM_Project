@@ -553,19 +553,15 @@ rf_pred_y = predict(rf_model, test_balanced)
 
 ## Step 7: Hyperparameter Tuning
 ```{r}
-train_control_grid = caret::trainControl(method = "cv", number = 5, search = "grid")
+train_control_grid = caret::trainControl(method = "repeatedcv", number = 5, repeats = 3)
+small_train_control_grid = caret::trainControl(method = "repeatedcv", number = 5, repeats = 1)
+random_train_control_grid = caret::trainControl(method="cv", number=3, search="random")
 ```
 ### SVM Linear kernel
 ```{r}
 set.seed(50)
-# Customizing the tuning grid
-svm_linear_grid <-  expand.grid(C = c(0.1, 1, 10, 50, 100, 500, 1000))
 
-#Setting the df as a factor
-train_df$is_bullying = as.factor(train_df$is_bullying)
-
-# training a svmLinear classification model while tuning parameters
-svm_linear_tuned = caret::train(is_bullying~ ., data = train_df, method = "svmLinear", trControl = train_control_grid, tuneGrid = svm_linear_grid)
+svm_linear_tuned = caret::train(is_bullying~ ., data = train_balanced, method = "svmLinear", trControl = random_train_control_grid, tuneLength=5)
 
 # summarising the results
 print(svm_linear_tuned)
@@ -574,38 +570,18 @@ print(svm_linear_tuned)
 ### SVM Polynomial kernel
 ```{r}
 set.seed(50)
-# Customsing the tuning grid
-svm_poly_grid <-  expand.grid(degree = 4,
-                            scale = 1,
-                            C = c(0.1, 1, 10, 50, 100, 500, 1000))
 
-#Setting the df as a factor
-train_df$is_bullying = as.factor(train_df$is_bullying)
+svm_model_poly = caret::train(is_bullying~ ., data = train_balanced, method = "svmPoly", trControl = random_train_control_grid, tuneLength=5)
 
-# training a svmLinear classification model while tuning parameters
-svm_model_poly = caret::train(is_bullying~ ., data = train_df, method = "svmPoly", trControl = train_control_grid, tuneGrid = svm_poly_grid)
-
-# summarising the results
+# summarizing the results
 print(svm_model_poly)
 ```
 
 ### SVM RBF Kernel
 ```{r}
-# SVM Hyperparameter Tuning (polynomial kernel)
-
-#Setting control grid method
-train_control = caret::trainControl(method = "cv", number = 5, search = "grid")
-
 set.seed(50)
-# Customizing the tuning grid
-svm_rbf_grid <-  expand.grid(sigma = 1,
-                            C = c(0.1, 1, 10, 50, 100, 500, 1000))
 
-#Setting the df as a factor
-train_df$is_bullying = as.factor(train_df$is_bullying)
-
-# training a svmLinear classification model while tuning parameters
-svm_model_rbf = caret::train(is_bullying~ ., data = train_df, method = "svmRadial", trControl = train_control_grid, tuneGrid = svm_rbf_grid)
+svm_model_rbf = caret::train(is_bullying~ ., data = train_balanced, method = "svmRadial", trControl = random_train_control_grid, tuneLength=5)
 
 # summarizing the results
 print(svm_model_rbf)
@@ -615,14 +591,8 @@ print(svm_model_rbf)
 ```{r}
 # MLP Hyperparameter Tuning
 set.seed(50)
-# Customizing the tuning grid
-mlpGrid <-  expand.grid(size = 1)
 
-#Setting the df as a factor
-train_df$is_bullying = as.factor(train_df$is_bullying)
-
-# training a svmLinear classification model while tuning parameters
-mlp_model_tuned = caret::train(is_bullying~ ., data = train_df, method = "mlp", trControl = train_control, tuneGrid = mlpGrid)
+mlp_model_tuned = caret::train(is_bullying~ ., data = train_balanced, method = "mlp", trControl = random_train_control_grid, tuneLength=5)
 
 # summarising the results
 print(mlp_model_tuned)

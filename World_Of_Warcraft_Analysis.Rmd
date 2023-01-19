@@ -60,15 +60,13 @@ Run the above code block to import the required libraries.
 # World of Warcraft Cyberbullying Dataset analysis
 
 ## Step 1: Problem statement
-World of Warcraft is a popular MMORPG (Massively multiplayer online role-playing game) video game with millions of user every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, World of Warcraft however is especially toxic and is often ranked as one of the most toxic gaming community’s today. In a survey by ADL (Anti-Defamation League) it was found 66% of adults ages 18-45 have been harassed/bullied in World of Warcraft in 2021.
+World of Warcraft is a popular MMORPG (Massively multiplayer online role-playing game) video game with millions of user every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, World of Warcraft however is especially toxic and is often ranked as one of the most toxic gaming community’s today. In a survey by ADL (Anti-Defamation League) it was found 66% of adults ages 18-45 have been harassed/bullied in World of Warcraft in 2021 (Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021).
 
 The objective of this project is to create a model that will be able to detect cyberbullying/toxicity. By using the World of Warcraft dataset provided to us it will allow the model to have reference for comments deemed as bullying.
 
 This would be a classification model that when give a comment/statement would decided whether it is bullying or not bullying, it will be able to do this by detecting certain words and phrases.
 
 Currently most video games have an option to filter chat, however this only censors certain words/phrases. Our model will be able to detect strings of words rather than just certain ones.
-
-ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (adl.org)
 
 ## Step 2: Importing data
 ```{r}
@@ -710,9 +708,14 @@ write.csv(results, "Data/results.csv")
 ```
 We output the table results to a csv file to make it easy to share results with other group members.
 
-## Step 8: Hyperparameter tuning
-
 # Individual contributions
+## Thomas Newton
+INSERT HERE
+## Leon Harper
+INSERT HERE
+## Michal Jedruszczak
+INSERT HERE
 
 # References
-Bretschneider, Uwe and Peters, Ralf, "DETECTING CYBERBULLYING IN ONLINE COMMUNITIES" (2016). Research Papers. Paper 61. http://aisel.aisnet.org/ecis2016_rp/61
+Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>
+Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (2022) ADL. Anti-Defamation League. Available at: https://www.adl.org/resources/report/hate-no-game-harassment-and-positive-social-experiences-online-games-2021 (Accessed: November 19, 2022). 

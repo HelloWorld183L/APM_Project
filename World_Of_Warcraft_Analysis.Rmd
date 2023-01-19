@@ -125,6 +125,10 @@ nrow(unique(wow_topics))
 This data set has a total of 23 different topics.
 
 ## Step 3: Cleaning the data / Pre-processing
+For pre-processing, we decided to merge the datasets as they are essentially identical to each other in terms of structure and we believed that this would simplify data pre-processing and remove code duplication. As we merged the datasets, we found that we could create a "is_bullying" column that would be used as a target variable for the model building process. We also created a "bullying_severity" column as each post can have multiple annotators for each cyberbullying post. 
+
+After that, we extracted the messages out of the HTML in order to then pre-process the messages through stemming, removing punctuation and removing stopwords (the messages are HTML as both datasets come from web forums). We then extracted a "word_counts" column for EDA purposes as well as sampling the data in order to balance it out. We then created training and test datasets for model building where each dataset is a document term matrix as we cannot pass in raw text data to the models. Finally, we export the relevant data (including clean data).
+
 ```{r}
 # Creates dataset column to merge posts and annotations csv files together
 wow_posts_df$dataset <- "WoW"
@@ -233,7 +237,7 @@ dtm = removeSparseTerms(dtm, 0.999)
 posts_data = as.data.frame(as.matrix(dtm))
 posts_data$is_bullying = as.factor(posts_df$is_bullying)
 ```
-We create a document term matrix from the html messages and we remove sparse terms using removeSparseTerms. We then assign a "is_bullying" column for model building.
+We create a document term matrix from the html messages and we remove sparse terms (i.e. empty values) using removeSparseTerms. We then assign a "is_bullying" column for model building and EDA purposes.
 
 ```{r}
 ggplot(data=posts_data, aes(x=is_bullying)) + geom_bar()
@@ -250,7 +254,7 @@ posts_data_balanced = posts_data[c(sample_bullying, sample_not_bullying),]
 
 ggplot(data=posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ```
-This creates a sample of the bullying data for balancing purposes. However, this comes at the expense of having much less data to work with.
+This creates a sample of the bullying data for balancing purposes. However, this comes at the expense of having much less data to work with as there are significantly less cyberbullying cases versus non-cyberbullying cases.
 
 ```{r}
 set.seed(42)
@@ -258,7 +262,7 @@ part <- sample(2, nrow(posts_data), replace=TRUE, prob=c(0.6, 0.4))
 train <- posts_data[part == 1, ]
 test <- posts_data[part == 2, ]
 ```
-We split the data using a 60:40 split.
+We split the data using a 60:40 train-test split.
 
 ```{r}
 set.seed(42)
@@ -276,7 +280,7 @@ write.csv(train, file="Data/train.csv")
 write.csv(test, file="Data/test.csv")
 write.csv(posts_data, file="Data/clean_posts_dtm.csv")
 ```
-We export the training and test data to make model building easier.
+We export the training and test data to make steps such as model building and EDA easier and more convenient as it can take time to pre-process the data (especially on slower computers).
 
 ## Step 4: EDA
 ### League of Legends analysis
@@ -542,6 +546,8 @@ glmnet_pred_y = predict(glmnet_model, test_balanced)
 ```{r}
 random_train_control_grid = caret::trainControl(method="cv", number=3, search="random")
 ```
+We decided to go with a random grid search as it simplified the process of hyperparameter tuning as it removed any potential biases that may occur from an uneven distribution of knowledge for the different models trained (i.e. we thought that a random grid search would be much more consistent when comparing tuned models).
+
 ### SVM Linear kernel
 ```{r}
 set.seed(42)
@@ -612,6 +618,14 @@ glm_tuned_pred_y = predict(rf_model, test_balanced)
 ```
 
 ## Step 7: Evaluation
+For this evaluation, we wanted a comprehensive evaluation of the models involved using key metrics such as recall, precision, f1 score, the time taken to train the models and more to give a better idea as to which models perform best. However, we think that the F1 score is the most important metric as we believe that a cyberbullying classifier should minimize the number of false positives (i.e. people who haven't actually bullied anybody) and false negatives (i.e. bullies that haven't been identified). The F1 score acts as a trade-off between precision and recall which is exactly what we need. The F1 score is also robust against uneven class distributions unlike accuracy which gives us flexibility in how we should tweak pre-processing.
+
+We have utilised the following to create an effective evaluation:
+1. Created confusion matrices that illustrate where misclassifications are taking place
+2. Plotted ROC curves to display the model performance
+3. Created a table of metrics showing the recall, precision, f1 score and the time taken to train the models
+We wanted to show how long it took to train each model as this would help identify production costs for each model (the models would take much longer to train on big batches of data).
+
 ### Creating confusion matrices
 ```{r}
 svm_confusion_matrix <- caret::confusionMatrix(svm_pred_y, test_balanced$is_bullying)
@@ -630,6 +644,7 @@ mlp_confusion_matrix
 ```{r}
 glm_confusion_matrix
 ```
+When examining these confusion matrices, it would appear that the number of false positives (i.e. falsely classifying a post as cyberbullying) is the differentiating factor in terms of f1-score as the glmnet model has the least amount of false positives and it has the greatest f1-score (as we can see in the table of metrics below).
 
 ```{r}
 svm_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_pred_y, test_balanced$is_bullying)
@@ -639,7 +654,7 @@ svm_rbf_cf_matrix <- caret::confusionMatrix(svm_rbf_pred_y, test_balanced$is_bul
 mlp_tuned_cf_matrix <- caret::confusionMatrix(mlp_tuned_pred_y, test_balanced$is_bullying)
 glm_tuned_cf_matrix <- caret::confusionMatrix(glm_tuned_pred_y, test_balanced$is_bullying)
 ```
-Here we create confusion matrices to get values such as F1 score, precision and recalls. When we use "mode="everything" ", we get additional values such as F1 Score for a better overview of the model performance.
+Here we create confusion matrices to get values such as F1 score, precision and recalls.
 
 ```{r}
 svm_linear_tuned_cf_matrix
@@ -656,6 +671,7 @@ svm_rbf_cf_matrix
 ```{r}
 mlp_tuned_cf_matrix
 ```
+It would appear that tuning MLP parameters through random grid search has actually decreased the accuracy of the model.
 
 ```{r}
 glm_tuned_cf_matrix
@@ -703,19 +719,19 @@ For each model, we will be calculating the evaluation metrics we will be using (
 create_table <- function(prediction_list, time_to_train_c) {
   Model_Name = names(prediction_list)
   Precision = c()
-  Sensitivity = c()
+  Recall = c()
   F1_Score = c()
   AUC = c()
   Time_to_Train_secs = time_to_train_c
   
   for (prediction_y in prediction_list) {
     Precision <- append(Precision, precision(prediction_y, test_balanced$is_bullying))
-    Sensitivity <- append(Sensitivity, sensitivity(prediction_y, test_balanced$is_bullying))
+    Recall <- append(Recall, recall(prediction_y, test_balanced$is_bullying))
     F1_Score <- append(F1_Score, F_meas(prediction_y, test_balanced$is_bullying))
     AUC <- append(AUC, auc(test_balanced$is_bullying, as.integer(prediction_y)))
   }
   
-  results <- data.frame(Model_Name, Precision, Sensitivity, F1_Score, AUC, Time_to_Train_secs)
+  results <- data.frame(Model_Name, Precision, Recall, F1_Score, AUC, Time_to_Train_secs)
   return(results)
 }
 ```
@@ -726,6 +742,7 @@ time_to_train = c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_
 results = create_table(prediction_list, time_to_train)
 results
 ```
+From these results, it would appear that the glmnet logistic regression model has the greatest performance as it has the greatest F1 score and AUC. It is also relatively quick to train which can reduce costs if deployed in a large-scale system.
 ### Output evaluation results
 ```{r}
 write.csv(results, "Data/results.csv")

@@ -506,7 +506,7 @@ set.seed(42)
 
 tic()
 
-svm_model = caret::train(is_bullying~., data=train_balanced , method =  "svmLinear" , trControl = train_control)
+svm_model = caret::train(is_bullying~., data=train_balanced , method =  "svmLinear" , trControl = train_control, verbose=FALSE)
 
 svm_toc <- toc(quiet=T)
 
@@ -519,7 +519,7 @@ svm_pred_y = predict(svm_model, test_balanced)
 set.seed(42)
 tic()
 
-mlp_model = caret::train(is_bullying~., data=train_balanced , method =  "mlp" , trControl = train_control)
+mlp_model = caret::train(is_bullying~., data=train_balanced , method =  "mlp" , trControl = train_control, verbose=FALSE)
 mlp_toc <- toc(quiet=T)
 
 mlp_time_taken <- mlp_toc$toc - mlp_toc$tic
@@ -532,7 +532,7 @@ set.seed(42)
 
 tic()
 
-rf_model = caret::train(is_bullying~., data=train_balanced , method =  "rf" , trControl = train_control)
+rf_model = caret::train(is_bullying~., data=train_balanced , method =  "rf" , trControl = train_control, verbose=FALSE)
 
 rf_toc <- toc(quiet=T)
 
@@ -542,53 +542,73 @@ rf_pred_y = predict(rf_model, test_balanced)
 
 ## Step 6: Hyperparameter Tuning
 ```{r}
-train_control_grid = caret::trainControl(method = "repeatedcv", number = 5, repeats = 3)
-small_train_control_grid = caret::trainControl(method = "repeatedcv", number = 5, repeats = 1)
 random_train_control_grid = caret::trainControl(method="cv", number=3, search="random")
 ```
 ### SVM Linear kernel
 ```{r}
-set.seed(50)
+set.seed(42)
 
-svm_linear_tuned = caret::train(is_bullying~ ., data = train_balanced, method = "svmLinear", trControl = random_train_control_grid, tuneLength=5)
+tic()
 
-# summarising the results
-print(svm_linear_tuned)
+svm_linear_tuned = caret::train(is_bullying~ ., data = train_balanced, method = "svmLinear", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+
+svm_linear_tuned_toc = toc(quiet=T)
+svm_linear_tuned_time_taken <- svm_linear_tuned_toc$toc - svm_linear_tuned_toc$tic
+svm_tuned_pred_y = predict(svm_linear_tuned, test_balanced)
 ```
 
 ### SVM Polynomial kernel
 ```{r}
-set.seed(50)
+set.seed(42)
 
-svm_model_poly = caret::train(is_bullying~ ., data = train_balanced, method = "svmPoly", trControl = random_train_control_grid, tuneLength=5)
+tic()
 
-# summarizing the results
-print(svm_model_poly)
+svm_model_poly = caret::train(is_bullying~ ., data = train_balanced, method = "svmPoly", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+
+svm_poly_toc = toc(quiet=T)
+
+svm_poly_tuned_time_taken = svm_poly_toc$toc - svm_poly_toc$tic
+svm_poly_pred_y = predict(svm_model_poly, test_balanced)
 ```
 
 ### SVM RBF Kernel
 ```{r}
-set.seed(50)
+set.seed(42)
 
-svm_model_rbf = caret::train(is_bullying~ ., data = train_balanced, method = "svmRadial", trControl = random_train_control_grid, tuneLength=5)
+tic()
+
+svm_model_rbf = caret::train(is_bullying~ ., data = train_balanced, method = "svmRadial", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+
+svm_rbf_toc = toc(quiet=T)
 
 # summarizing the results
-print(svm_model_rbf)
+svm_poly_tuned_time_taken = svm_poly_toc$toc - svm_poly_toc$tic
+svm_rbf_pred_y = predict(svm_model_rbf, test_balanced)
 ```
 
 ### MLP Tuned
 ```{r}
 # MLP Hyperparameter Tuning
-set.seed(50)
+set.seed(42)
+
+tic()
 
 mlp_model_tuned = caret::train(is_bullying~ ., data = train_balanced, method = "mlp", trControl = random_train_control_grid, tuneLength=5)
 
-# summarising the results
-print(mlp_model_tuned)
+mlp_toc = toc(quiet=T)
+
+mlp_tuned_time_taken = mlp_toc$toc - mlp_toc$tic
+mlp_pred_y = predict(mlp_model_tuned, test_balanced)
 ```
 
 ## Step 7: Evaluation
 ### Confusion matrices
+```{r}
+svm_confusion_matrix <- caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
+mlp_confusion_matrix <- caret::confusionMatrix(data=mlp_pred_y, reference=test_balanced$is_bullying, mode="everything")
+rf_confusion_matrix <- caret::confusionMatrix(data=rf_pred_y, reference=test_balanced$is_bullying, mode="everything")
+```
+#### Confusion matrices (tuned models)
 ```{r}
 svm_confusion_matrix <- caret::confusionMatrix(data=svm_pred_y, reference=test_balanced$is_bullying, mode="everything")
 mlp_confusion_matrix <- caret::confusionMatrix(data=mlp_pred_y, reference=test_balanced$is_bullying, mode="everything")

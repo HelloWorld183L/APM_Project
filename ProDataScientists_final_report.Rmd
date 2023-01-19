@@ -1,3 +1,14 @@
+---
+title: "Pro Data Scientists - Applied Predictive Modelling Project"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 4
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
 # Pro Data Scientists - Applied Predictive Modelling Project
 
 ### Team members
@@ -13,7 +24,12 @@ These are the team members for the group project.
 # Initial set-up
 
 ## Libraries to use
+
 ```{r}
+r = getOption("repos")
+r["CRAN"] = "http://cran.us.r-project.org"
+options(repos = r)
+
 install.packages("dplyr")
 install.packages("ggplot2")
 install.packages("purrr")
@@ -30,9 +46,15 @@ install.packages("pROC")
 install.packages("tictoc")
 install.packages("wordcloud")
 install.packages("ggraph")
+install.packages("igraph")
+install.packages("tidytext")
+install.packages("tidyverse")
 cat("\014")
 ```
-Run the above block to install the packages necessary to run the code in the project. "cat("\014)" is used to clear the console output for presentation purposes.
+
+Run the above block to install the packages necessary to run the code in
+the project. "cat("\\014)" is used to clear the console output for
+presentation purposes.
 
 ```{r}
 library(dplyr)
@@ -53,22 +75,43 @@ library(pROC)
 library(tictoc)
 library(wordcloud)
 library(ggraph)
+library(tidytext)
+library(tidyverse)
+library(igraph)
 cat("\014")
 ```
+
 Run the above code block to import the required libraries.
 
 # World of Warcraft Cyberbullying Dataset analysis
 
 ## Step 1: Problem statement
-World of Warcraft is a popular MMORPG (Massively multiplayer online role-playing game) video game with millions of user every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, World of Warcraft however is especially toxic and is often ranked as one of the most toxic gaming community’s today. In a survey by ADL (Anti-Defamation League) it was found 66% of adults ages 18-45 have been harassed/bullied in World of Warcraft in 2021 (Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021).
 
-The objective of this project is to create a model that will be able to detect cyberbullying/toxicity. By using the World of Warcraft dataset provided to us it will allow the model to have reference for comments deemed as bullying.
+World of Warcraft is a popular MMORPG (Massively multiplayer online
+role-playing game) video game with millions of user every month. Due to
+having this many players there is bound to be some cyberbullying/toxic
+players included in those millions of players, World of Warcraft however
+is especially toxic and is often ranked as one of the most toxic gaming
+community's today. In a survey by ADL (Anti-Defamation League) it was
+found 66% of adults ages 18-45 have been harassed/bullied in World of
+Warcraft in 2021 (Hate is No Game: Harassment and Positive Social
+Experiences in Online Games 2021).
 
-This would be a classification model that when give a comment/statement would decided whether it is bullying or not bullying, it will be able to do this by detecting certain words and phrases.
+The objective of this project is to create a model that will be able to
+detect cyberbullying/toxicity. By using the World of Warcraft dataset
+provided to us it will allow the model to have reference for comments
+deemed as bullying.
 
-Currently most video games have an option to filter chat, however this only censors certain words/phrases. Our model will be able to detect strings of words rather than just certain ones.
+This would be a classification model that when give a comment/statement
+would decided whether it is bullying or not bullying, it will be able to
+do this by detecting certain words and phrases.
+
+Currently most video games have an option to filter chat, however this
+only censors certain words/phrases. Our model will be able to detect
+strings of words rather than just certain ones.
 
 ## Step 2: Importing data
+
 ```{r}
 wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
@@ -76,12 +119,21 @@ wow_annotations_df <- read.csv("Data/annotations_wow.csv")
 lol_posts_df <- read.csv("Data/posts_lol.csv")
 lol_annotations_df <- read.csv("Data/annotations_lol.csv")
 ```
-This imports the required data for the project. The data was exported from an SQL script that creates the necessary tables (i.e. posts and annotations) and the data. To simplify the process of importing data, we used the table export wizard to export the SQL table data into csv files using custom SQL as the MySQL Workbench Table Export Wizard doesn't export all of the data properly.
+
+This imports the required data for the project. The data was exported
+from an SQL script that creates the necessary tables (i.e. posts and
+annotations) and the data. To simplify the process of importing data, we
+used the table export wizard to export the SQL table data into csv files
+using custom SQL as the MySQL Workbench Table Export Wizard doesn't
+export all of the data properly.
 
 ## Step 2.5: Preliminary EDA
-We are doing a preliminary EDA in order to understand how we should clean the data and the kind of data that we are dealing with.
+
+We are doing a preliminary EDA in order to understand how we should
+clean the data and the kind of data that we are dealing with.
 
 ### League of Legends analysis
+
 ```{r}
 summary(lol_posts_df)
 ```
@@ -96,16 +148,34 @@ There are 16867 data points in the League of Legends posts data.
 lol_posts_df %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
 nrow(unique(lol_topics))
 ```
+
 This data set has a total of 17 different topics.
 
 ### World of Warcraft analysis
-In our World of Warcraft posts dataset, we are given 354 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional WoW annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. This information has been combined into a single file -- clean_posts_balanced_sample.csv.
 
-Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
+In our World of Warcraft posts dataset, we are given 354 rows of 5
+features: topic_id, post_number, author, html_message and timestamp. For
+the purposes of this project, we will ignore timestamp, as it will not
+be used to train our models. The additional WoW annotations dataset
+reveals which messages were flagged as cyberbullying, from which the
+only useful features are the post_number and topic_id. This information
+has been combined into a single file -- clean_posts_balanced_sample.csv.
 
-Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
+Posts in the main dataset are formatted using HTML, meaning that our
+model will either have to be trained to recognise patterns such as
+paragraph breaks or we will have to clean the data and transform it into
+something more appropriate.
 
-Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations data set, all values but post number are categorical.
+Furthermore, as we are only using a single set of features (post_number
+and topic_id) from the annotations dataset, we may be able to add
+another column to the posts dataset -- a Boolean value representing
+whether or not a specific post contains cyberbullying. This will
+eliminate the need for the use of two separate datasets to develop our
+models.
+
+Regarding the types of data we're given, topic IDs, authors and HTML
+messages are categorical, while post numbers are ordinal. In the
+annotations data set, all values but post number are categorical.
 
 ```{r}
 summary(wow_posts_df)
@@ -125,9 +195,23 @@ nrow(unique(wow_topics))
 This data set has a total of 23 different topics.
 
 ## Step 3: Cleaning the data / Pre-processing
-For pre-processing, we decided to merge the datasets as they are essentially identical to each other in terms of structure and we believed that this would simplify data pre-processing and remove code duplication. As we merged the datasets, we found that we could create a "is_bullying" column that would be used as a target variable for the model building process. We also created a "bullying_severity" column as each post can have multiple annotators for each cyberbullying post. 
 
-After that, we extracted the messages out of the HTML in order to then pre-process the messages through stemming, removing punctuation and removing stopwords (the messages are HTML as both datasets come from web forums). We then extracted a "word_counts" column for EDA purposes as well as sampling the data in order to balance it out. We then created training and test datasets for model building where each dataset is a document term matrix as we cannot pass in raw text data to the models. Finally, we export the relevant data (including clean data).
+For pre-processing, we decided to merge the datasets as they are
+essentially identical to each other in terms of structure and we
+believed that this would simplify data pre-processing and remove code
+duplication. As we merged the datasets, we found that we could create a
+"is_bullying" column that would be used as a target variable for the
+model building process. We also created a "bullying_severity" column as
+each post can have multiple annotators for each cyberbullying post.
+
+After that, we extracted the messages out of the HTML in order to then
+pre-process the messages through stemming, removing punctuation and
+removing stopwords (the messages are HTML as both datasets come from web
+forums). We then extracted a "word_counts" column for EDA purposes as
+well as sampling the data in order to balance it out. We then created
+training and test datasets for model building where each dataset is a
+document term matrix as we cannot pass in raw text data to the models.
+Finally, we export the relevant data (including clean data).
 
 ```{r}
 # Creates dataset column to merge posts and annotations csv files together
@@ -139,13 +223,22 @@ lol_annotations_df$dataset <- "LoL"
 posts_df <- rbind(wow_posts_df, lol_posts_df)
 annotations_df <- rbind(lol_annotations_df, wow_annotations_df)
 ```
-Since wow_posts_df and lol_posts_df have the same structure, we merged the posts and annotation data frames together to simplify pre-processing (this avoids repeating code). However, we will need to analyse the datasets separately for EDA purposes so we created a "dataset" feature to counteract this.
+
+Since wow_posts_df and lol_posts_df have the same structure, we merged
+the posts and annotation data frames together to simplify pre-processing
+(this avoids repeating code). However, we will need to analyse the
+datasets separately for EDA purposes so we created a "dataset" feature
+to counteract this.
 
 ```{r}
 posts_df$id <- paste(posts_df$dataset, posts_df$topic_id, posts_df$post_number, sep="_")
 annotations_df$id <- paste(annotations_df$dataset, annotations_df$topic_id, annotations_df$post_number, sep="_")
 ```
-To simplify the merging of data frames, we will create an ID column so that a left join can be performed on a single column. This mitigates the issues of duplicate topic ids and post numbers as the post numbers are only unique according to the topic id. 
+
+To simplify the merging of data frames, we will create an ID column so
+that a left join can be performed on a single column. This mitigates the
+issues of duplicate topic ids and post numbers as the post numbers are
+only unique according to the topic id.
 
 ```{r}
 merged_df <- left_join(posts_df, annotations_df, by = "id", keep=TRUE)
@@ -161,9 +254,15 @@ names(merged_df)[names(merged_df) == "annotator"] <- "bullying_severity"
 merged_df["bullying_severity"][is.na(merged_df["bullying_severity"])] <- 0
 posts_df <- merged_df %>% group_by(id) %>% slice(which.max(bullying_severity))
 ```
-This code performs a left join to merge the dataframes together. Most of the columns from the annotations dataframe are useless for training an NLP classifier so we will be removing those columns. Since there are duplicate columns on each side, we will be dropping "y" columns. 
 
-We also created a bullying_severity column as we found that some posts have been annotated as bullying by multiple annotators which could make this a useful feature for model building.
+This code performs a left join to merge the dataframes together. Most of
+the columns from the annotations dataframe are useless for training an
+NLP classifier so we will be removing those columns. Since there are
+duplicate columns on each side, we will be dropping "y" columns.
+
+We also created a bullying_severity column as we found that some posts
+have been annotated as bullying by multiple annotators which could make
+this a useful feature for model building.
 
 ```{r}
 remove_html <- function(html_msg, isHtml) {
@@ -185,9 +284,27 @@ remove_html <- function(html_msg, isHtml) {
   return(html_msg)
 }
 ```
-The "html_message" column has messages that have HTML and do not contain HTML at all. In order to handle this, we will be creating a "is_html" column that uses a regular expression to detect HTML in order to prevent errors with RVest. The "tm" package does not handle removing HTML content and we cannot simply use a regular expression to remove HTML as the data originates from gaming forums where "<blockquote>" elements are frequently used. If we used a regular expression then the content inside the blockquotes would still remain.
 
-To remove the content of the blockquotes, we used RVest to acquire the blockquote element contents as well as any <div> elements with ".quote" and then we use xml_remove() to remove the blockquote element nodes. We then convert the RVest object back into a string.
+The "html_message" column has messages that have HTML and do not contain
+HTML at all. In order to handle this, we will be creating a "is_html"
+column that uses a regular expression to detect HTML in order to prevent
+errors with RVest. The "tm" package does not handle removing HTML
+content and we cannot simply use a regular expression to remove HTML as
+the data originates from gaming forums where "
+
+<blockquote>
+
+" elements are frequently used. If we used a regular expression then the
+content inside the blockquotes would still remain.
+
+To remove the content of the blockquotes, we used RVest to acquire the
+blockquote element contents as well as any
+
+<div>
+
+elements with ".quote" and then we use xml_remove() to remove the
+blockquote element nodes. We then convert the RVest object back into a
+string.
 
 ```{r}
 # Regex for detecting HTML
@@ -211,24 +328,40 @@ posts_corpus <- posts_corpus %>%
                 tm_map(stripWhitespace)
 posts_df$html_message <- data.frame(text=sapply(posts_corpus, identity), stringsAsFactors = F)$text
 ```
-This code removes useless characters, stopwords, punctuation and it uses stemming to improve model performance. Certain steps of the pre-processing could be tweaked to improve model performance (e.g. number of stopwords being omitted) as the pre-processing could end up being too rigorous. 
 
-We removed the HTML characters first in order to prevent interference when removing punctuation or whitespace.
+This code removes useless characters, stopwords, punctuation and it uses
+stemming to improve model performance. Certain steps of the
+pre-processing could be tweaked to improve model performance (e.g.
+number of stopwords being omitted) as the pre-processing could end up
+being too rigorous.
+
+We removed the HTML characters first in order to prevent interference
+when removing punctuation or whitespace.
 
 ```{r}
 posts_df$word_counts <- str_count(posts_df$html_message, "\\S+")
 ```
-This code gets the word counts for the html messages which can be used for analysing word counts in the EDA. We may also use the word counts to filter messages with word counts that are too low.
+
+This code gets the word counts for the html messages which can be used
+for analysing word counts in the EDA. We may also use the word counts to
+filter messages with word counts that are too low.
 
 ```{r}
 posts_df <- posts_df %>% na_if("") %>% na.omit
 ```
-This code removes NaN rows from posts_df which can become a problem after pre-processing if there were too many stop words in the original messages.
+
+This code removes NaN rows from posts_df which can become a problem
+after pre-processing if there were too many stop words in the original
+messages.
 
 ```{r}
 write.csv(posts_df, file="Data/clean_posts.csv")
 ```
-This code exports the clean posts to a csv file to be analysed separately. This also comes in handy in order to save time when performing EDAs as pre-processing can take time (especially on slow computers).
+
+This code exports the clean posts to a csv file to be analysed
+separately. This also comes in handy in order to save time when
+performing EDAs as pre-processing can take time (especially on slow
+computers).
 
 ```{r}
 corpus = VCorpus(VectorSource(posts_df$html_message))
@@ -237,12 +370,21 @@ dtm = removeSparseTerms(dtm, 0.999)
 posts_data = as.data.frame(as.matrix(dtm))
 posts_data$is_bullying = as.factor(posts_df$is_bullying)
 ```
-We create a document term matrix from the html messages and we remove sparse terms (i.e. empty values) using removeSparseTerms. We then assign a "is_bullying" column for model building and EDA purposes.
+
+We create a document term matrix from the html messages and we remove
+sparse terms (i.e. empty values) using removeSparseTerms. We then assign
+a "is_bullying" column for model building and EDA purposes.
 
 ```{r}
 ggplot(data=posts_data, aes(x=is_bullying)) + geom_bar()
 ```
-As we can see, the data is heavily imbalanced where there isn't many bullying cases. This will result in the classifier being trained to where it is more accurate at classifying non-bullying cases rather than bullying cases. We will use undersampling because we have plenty of non-bullying data but not enough data for bullying cases (this means we can afford to reduce how much data we are dealing with).
+
+As we can see, the data is heavily imbalanced where there isn't many
+bullying cases. This will result in the classifier being trained to
+where it is more accurate at classifying non-bullying cases rather than
+bullying cases. We will use undersampling because we have plenty of
+non-bullying data but not enough data for bullying cases (this means we
+can afford to reduce how much data we are dealing with).
 
 ```{r}
 is_bullying = which(posts_data$is_bullying == 1)
@@ -254,7 +396,11 @@ posts_data_balanced = posts_data[c(sample_bullying, sample_not_bullying),]
 
 ggplot(data=posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ```
-This creates a sample of the bullying data for balancing purposes. However, this comes at the expense of having much less data to work with as there are significantly less cyberbullying cases versus non-cyberbullying cases.
+
+This creates a sample of the bullying data for balancing purposes.
+However, this comes at the expense of having much less data to work with
+as there are significantly less cyberbullying cases versus
+non-cyberbullying cases.
 
 ```{r}
 set.seed(42)
@@ -262,6 +408,7 @@ part <- sample(2, nrow(posts_data), replace=TRUE, prob=c(0.6, 0.4))
 train <- posts_data[part == 1, ]
 test <- posts_data[part == 2, ]
 ```
+
 We split the data using a 60:40 train-test split.
 
 ```{r}
@@ -270,6 +417,7 @@ part <- sample(2, nrow(posts_data_balanced), replace=TRUE, prob=c(0.6, 0.4))
 train_balanced <- posts_data_balanced[part == 1, ]
 test_balanced <- posts_data_balanced[part == 2, ]
 ```
+
 We split the data using a 60:40 split. This is for the balanced data.
 
 ```{r}
@@ -280,10 +428,15 @@ write.csv(train, file="Data/train.csv")
 write.csv(test, file="Data/test.csv")
 write.csv(posts_data, file="Data/clean_posts_dtm.csv")
 ```
-We export the training and test data to make steps such as model building and EDA easier and more convenient as it can take time to pre-process the data (especially on slower computers).
+
+We export the training and test data to make steps such as model
+building and EDA easier and more convenient as it can take time to
+pre-process the data (especially on slower computers).
 
 ## Step 4: EDA
+
 ### League of Legends analysis
+
 ```{r}
 posts_df %>% filter(dataset == "LoL") -> lol_posts
 lol_posts %>% filter(is_bullying == 1) -> bullying_lol
@@ -293,6 +446,7 @@ bullying_lol
 ```{r}
 nrow(bullying_lol) / nrow(lol_posts) * 100
 ```
+
 For this data set 1.53% of the posts are labeled as bullying.
 
 ```{r}
@@ -389,6 +543,7 @@ ggraph(lol_bigram_graph, layout = "fr") +
 ```
 
 ### World of Warcraft analysis
+
 ```{r}
 wow_posts <- posts_df %>% filter(dataset == "WoW")
 posts_df %>% filter(is_bullying == 1) -> bullying_wow
@@ -496,6 +651,7 @@ ggraph(wow_bigram_graph, layout = "fr") +
 ## Step 5: Predictive modelling
 
 ### Initial setup
+
 ```{r}
 train_balanced$is_bullying = as.factor(train_balanced$is_bullying)
 test_balanced$is_bullying = as.factor(test_balanced$is_bullying)
@@ -504,6 +660,7 @@ train_control = trainControl(method = "cv", number = 5)
 ```
 
 ### SVM
+
 ```{r}
 set.seed(42)
 
@@ -518,6 +675,7 @@ svm_pred_y = predict(svm_model, test_balanced)
 ```
 
 ### MLP
+
 ```{r}
 set.seed(42)
 tic()
@@ -530,6 +688,7 @@ mlp_pred_y = predict(mlp_model, test_balanced)
 ```
 
 ### glmnet
+
 ```{r}
 set.seed(42)
 
@@ -543,12 +702,19 @@ glmnet_pred_y = predict(glmnet_model, test_balanced)
 ```
 
 ## Step 6: Hyperparameter Tuning
+
 ```{r}
 random_train_control_grid = caret::trainControl(method="cv", number=3, search="random")
 ```
-We decided to go with a random grid search as it simplified the process of hyperparameter tuning as it removed any potential biases that may occur from an uneven distribution of knowledge for the different models trained (i.e. we thought that a random grid search would be much more consistent when comparing tuned models).
+
+We decided to go with a random grid search as it simplified the process
+of hyperparameter tuning as it removed any potential biases that may
+occur from an uneven distribution of knowledge for the different models
+trained (i.e. we thought that a random grid search would be much more
+consistent when comparing tuned models).
 
 ### SVM Linear kernel
+
 ```{r}
 set.seed(42)
 
@@ -562,6 +728,7 @@ svm_tuned_pred_y = predict(svm_linear_tuned, test_balanced)
 ```
 
 ### SVM Polynomial kernel
+
 ```{r}
 set.seed(42)
 
@@ -576,6 +743,7 @@ svm_poly_pred_y = predict(svm_model_poly, test_balanced)
 ```
 
 ### SVM RBF Kernel
+
 ```{r}
 set.seed(42)
 
@@ -591,6 +759,7 @@ svm_rbf_pred_y = predict(svm_model_rbf, test_balanced)
 ```
 
 ### MLP Tuned
+
 ```{r}
 set.seed(42)
 
@@ -605,6 +774,7 @@ mlp_tuned_pred_y = predict(mlp_model_tuned, test_balanced)
 ```
 
 ### GLMNET Tuned
+
 ```{r}
 set.seed(42)
 
@@ -614,19 +784,34 @@ glm_tuned_model = caret::train(is_bullying~., data=train_balanced , method = "gl
 glm_tuned_toc <- toc(quiet=T)
 
 glm_tuned_time_taken <- glm_tuned_toc$toc - glm_tuned_toc$tic
-glm_tuned_pred_y = predict(rf_model, test_balanced)
+glm_tuned_pred_y = predict(glm_tuned_model, test_balanced)
 ```
 
 ## Step 7: Evaluation
-For this evaluation, we wanted a comprehensive evaluation of the models involved using key metrics such as recall, precision, f1 score, the time taken to train the models and more to give a better idea as to which models perform best. However, we think that the F1 score is the most important metric as we believe that a cyberbullying classifier should minimize the number of false positives (i.e. people who haven't actually bullied anybody) and false negatives (i.e. bullies that haven't been identified). The F1 score acts as a trade-off between precision and recall which is exactly what we need. The F1 score is also robust against uneven class distributions unlike accuracy which gives us flexibility in how we should tweak pre-processing.
 
-We have utilised the following to create an effective evaluation:
-1. Created confusion matrices that illustrate where misclassifications are taking place
-2. Plotted ROC curves to display the model performance
-3. Created a table of metrics showing the recall, precision, f1 score and the time taken to train the models
-We wanted to show how long it took to train each model as this would help identify production costs for each model (the models would take much longer to train on big batches of data).
+For this evaluation, we wanted a comprehensive evaluation of the models
+involved using key metrics such as recall, precision, f1 score, the time
+taken to train the models and more to give a better idea as to which
+models perform best. However, we think that the F1 score is the most
+important metric as we believe that a cyberbullying classifier should
+minimize the number of false positives (i.e. people who haven't actually
+bullied anybody) and false negatives (i.e. bullies that haven't been
+identified). The F1 score acts as a trade-off between precision and
+recall which is exactly what we need. The F1 score is also robust
+against uneven class distributions unlike accuracy which gives us
+flexibility in how we should tweak pre-processing.
+
+We have utilised the following to create an effective evaluation: 1.
+Created confusion matrices that illustrate where misclassifications are
+taking place 2. Plotted ROC curves to display the model performance 3.
+Created a table of metrics showing the recall, precision, f1 score and
+the time taken to train the models We wanted to show how long it took to
+train each model as this would help identify production costs for each
+model (the models would take much longer to train on big batches of
+data).
 
 ### Creating confusion matrices
+
 ```{r}
 svm_confusion_matrix <- caret::confusionMatrix(svm_pred_y, test_balanced$is_bullying)
 mlp_confusion_matrix <- caret::confusionMatrix(mlp_pred_y, test_balanced$is_bullying)
@@ -644,7 +829,12 @@ mlp_confusion_matrix
 ```{r}
 glm_confusion_matrix
 ```
-When examining these confusion matrices, it would appear that the number of false positives (i.e. falsely classifying a post as cyberbullying) is the differentiating factor in terms of f1-score as the glmnet model has the least amount of false positives and it has the greatest f1-score (as we can see in the table of metrics below).
+
+When examining these confusion matrices, it would appear that the number
+of false positives (i.e. falsely classifying a post as cyberbullying) is
+the differentiating factor in terms of f1-score as the glmnet model has
+the least amount of false positives and it has the greatest f1-score (as
+we can see in the table of metrics below).
 
 ```{r}
 svm_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_pred_y, test_balanced$is_bullying)
@@ -654,7 +844,9 @@ svm_rbf_cf_matrix <- caret::confusionMatrix(svm_rbf_pred_y, test_balanced$is_bul
 mlp_tuned_cf_matrix <- caret::confusionMatrix(mlp_tuned_pred_y, test_balanced$is_bullying)
 glm_tuned_cf_matrix <- caret::confusionMatrix(glm_tuned_pred_y, test_balanced$is_bullying)
 ```
-Here we create confusion matrices to get values such as F1 score, precision and recalls.
+
+Here we create confusion matrices to get values such as F1 score,
+precision and recalls.
 
 ```{r}
 svm_linear_tuned_cf_matrix
@@ -671,13 +863,16 @@ svm_rbf_cf_matrix
 ```{r}
 mlp_tuned_cf_matrix
 ```
-It would appear that tuning MLP parameters through random grid search has actually decreased the accuracy of the model.
+
+It would appear that tuning MLP parameters through random grid search
+has actually decreased the accuracy of the model.
 
 ```{r}
 glm_tuned_cf_matrix
 ```
 
 ### ROC Curves
+
 ```{r}
 plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
   model_1_pred_y <- as.numeric(levels(model_1_pred_y))[model_1_pred_y]
@@ -694,26 +889,42 @@ plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, mode
 ```
 
 #### Non-tuned models
+
 ```{r}
 plot_roc_curves(svm_pred_y, mlp_pred_y, glmnet_pred_y, c("SVM", "MLP", "GLMNET"))
 ```
 
 #### Comparing tuned SVM models
+
 ```{r}
 plot_roc_curves(svm_tuned_pred_y, svm_poly_pred_y, svm_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
 ```
-It would appear that the polynomial kernel is most suitable for bullying classification. We will compare this SVM model that uses the polynomial kernel with other models.
+
+It would appear that the polynomial kernel is most suitable for bullying
+classification. We will compare this SVM model that uses the polynomial
+kernel with other models.
 
 #### Tuned models
+
 ```{r}
 plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
 ```
 
-This code creates ROC curves for each model with different colours. We then print the AUC values for each curve.
+This code creates ROC curves for each model with different colours. We
+then print the AUC values for each curve.
 
 ### Table of metrics
+
 #### Calculating metrics
-For each model, we will be calculating the evaluation metrics we will be using (time taken, precision, sensitivity, f1 score, AUC) to create a table of metrics which can be used to evaluate each model. We are acquiring the time taken to train each model to see how practical the models would be if the models were to be trained continuously with new data in terms of computation. While it doesn't take that long to train the models with the sample data, it would take much longer if there was more data.
+
+For each model, we will be calculating the evaluation metrics we will be
+using (time taken, precision, sensitivity, f1 score, AUC) to create a
+table of metrics which can be used to evaluate each model. We are
+acquiring the time taken to train each model to see how practical the
+models would be if the models were to be trained continuously with new
+data in terms of computation. While it doesn't take that long to train
+the models with the sample data, it would take much longer if there was
+more data.
 
 ```{r}
 create_table <- function(prediction_list, time_to_train_c) {
@@ -742,24 +953,44 @@ time_to_train = c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_
 results = create_table(prediction_list, time_to_train)
 results
 ```
-From these results, it would appear that the glmnet logistic regression model has the greatest performance as it has the greatest F1 score (81%) and AUC score. It is also relatively quick to train which can reduce costs if deployed in a large-scale system where the model may be continuously trained with new data. However, the SVM model with a polynomial kernel appears to be slightly better in terms of recall than the glmnet model. However, this difference is very small to where it won't really amount to anything.
 
-We can also see that the mlp model performed the worst as it took a long time to train on a relatively small sample of data (almost 2 minutes) and it has the worst F1 and AUC scores where the F1 score was 66% whilst the AUC was 69%. 
-### Output evaluation results
+From these results, it would appear that the glmnet logistic regression
+model has the greatest performance as it has the greatest F1 score (81%)
+and AUC score. It is also relatively quick to train which can reduce
+costs if deployed in a large-scale system where the model may be
+continuously trained with new data. However, the SVM model with a
+polynomial kernel appears to be slightly better in terms of recall than
+the glmnet model. However, this difference is very small to where it
+won't really amount to anything.
+
+We can also see that the mlp model performed the worst as it took a long
+time to train on a relatively small sample of data (almost 2 minutes)
+and it has the worst F1 and AUC scores where the F1 score was 66% whilst
+the AUC was 69%. \### Output evaluation results
+
 ```{r}
 write.csv(results, "Data/results.csv")
 ```
-We output the table results to a csv file to make it easy to share results with other group members.
+
+We output the table results to a csv file to make it easy to share
+results with other group members.
 
 # Individual contributions
+
 ## Thomas Newton
-INSERT HERE
-## Leon Harper
-INSERT HERE
-## Michal Jedruszczak
-In this project I was responsible for the preliminary EDA and the final EDA. I also created the contents section and made sure that all of the references were in MMU Harvard format.
+
+INSERT HERE \## Leon Harper INSERT HERE \## Michal Jedruszczak In this
+project I was responsible for the preliminary EDA and the final EDA. I
+also created the contents section and made sure that all of the
+references were in MMU Harvard format.
 
 # References
-Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>
 
-Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (2022) ADL. Anti-Defamation League. Available at: https://www.adl.org/resources/report/hate-no-game-harassment-and-positive-social-experiences-online-games-2021 (Accessed: November 19, 2022). 
+Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online
+Communities" (2016). *Research Papers*. Paper 61.
+<http://aisel.aisnet.org/ecis2016_rp/61>
+
+Hate is No Game: Harassment and Positive Social Experiences in Online
+Games 2021 (2022) ADL. Anti-Defamation League. Available at:
+<https://www.adl.org/resources/report/hate-no-game-harassment-and-positive-social-experiences-online-games-2021>
+(Accessed: November 19, 2022).

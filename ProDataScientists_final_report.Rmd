@@ -1,13 +1,16 @@
 ---
-title: "Pro Data Scientists - Applied Predictive Modelling Project"
-
+title: "Pro Data Scientists - Cyberbullying Classifier"
 output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+    df_print: paged
   pdf_document:
-    toc: true
+    toc: yes
     toc_depth: 4
     latex_engine: xelatex
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -22,10 +25,7 @@ Michal Jedruszczak (21440496)
 These are the team members for the group project.
 
 # Initial set-up
-
-## Libraries to use
-
-```{r}
+```{r include= FALSE, cache=TRUE}
 r = getOption("repos")
 r["CRAN"] = "http://cran.us.r-project.org"
 options(repos = r)
@@ -50,13 +50,13 @@ install.packages("igraph")
 install.packages("tidytext")
 install.packages("tidyverse")
 cat("\014")
+
+# Run the above block to install the packages necessary to run the code in
+# the project. "cat("\\014)" is used to clear the console output for
+# presentation purposes.
 ```
 
-Run the above block to install the packages necessary to run the code in
-the project. "cat("\\014)" is used to clear the console output for
-presentation purposes.
-
-```{r}
+```{r include=FALSE}
 library(dplyr)
 library(ggplot2)
 library(xml2)
@@ -79,12 +79,12 @@ library(tidytext)
 library(tidyverse)
 library(igraph)
 cat("\014")
+
+# Run the above code block to import the required libraries.
 ```
 
-Run the above code block to import the required libraries.
-
 # Step 1: Problem statement
-
+## World of Warcraft Problem Statement
 World of Warcraft is a popular MMORPG (Massively multiplayer online
 role-playing game) video game with millions of user every month. Due to
 having this many players there is bound to be some cyberbullying/toxic
@@ -108,9 +108,18 @@ Currently most video games have an option to filter chat, however this
 only censors certain words/phrases. Our model will be able to detect
 strings of words rather than just certain ones.
 
-# Step 2: Importing data
+## League of Legends problem statement
+League of Legends is a popular MOBA (Multiplayer online battle arena) video game with millions of users every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, League however is especially toxic and is often ranked as one of the most toxic gaming community’s today. The current ban rate of all accounts as of September 2022 is 2.25% (Around 2,632,500 account). In a survey by ADL (Anti-Defamation League) it was found 65% of adults ages 18-45 have been harassed/bullied in League of Legends in 2021.
 
-```{r}
+The objective of this project is to create a model that will be able to detect cyberbullying/toxicity. By using the League of legends dataset provided to us it will allow the model to have reference for comments deemed as bullying.
+
+This would be a classification model that when give a comment/statement would decided whether it is bullying or not bullying, it will be able to do this by detecting certain words and phrases.
+
+Currently most video games have an option to filter chat, however this only censors certain words/phrases. Our model will be able to detect strings of words rather than just certain ones.
+
+ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (adl.org)
+# Step 2: Importing data
+```{r warning=FALSE}
 wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
 
@@ -151,7 +160,7 @@ This data set has a total of 17 different topics.
 
 ## World of Warcraft analysis
 
-In our World of Warcraft posts dataset, we are given 354 rows of 5
+In our World of Warcraft posts dataset, we are given 16978 rows of 5
 features: topic_id, post_number, author, html_message and timestamp. For
 the purposes of this project, we will ignore timestamp, as it will not
 be used to train our models. The additional WoW annotations dataset
@@ -304,7 +313,7 @@ elements with ".quote" and then we use xml_remove() to remove the
 blockquote element nodes. We then convert the RVest object back into a
 string.
 
-```{r}
+```{r cache=TRUE}
 # Regex for detecting HTML
 detect_html_regex <- "<.*?>"
 # Create is_html column
@@ -373,7 +382,7 @@ We create a document term matrix from the html messages and we remove
 sparse terms (i.e. empty values) using removeSparseTerms. We then assign
 a "is_bullying" column for model building and EDA purposes.
 
-```{r}
+```{r include=FALSE}
 ggplot(data=posts_data, aes(x=is_bullying)) + geom_bar()
 ```
 
@@ -391,14 +400,15 @@ nsamp = min(length(is_bullying), length(not_bullying))
 sample_bullying = sample(is_bullying, nsamp)
 sample_not_bullying = sample(not_bullying, nsamp)
 posts_data_balanced = posts_data[c(sample_bullying, sample_not_bullying),]
-
-ggplot(data=posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ```
-
 This creates a sample of the bullying data for balancing purposes.
 However, this comes at the expense of having much less data to work with
 as there are significantly less cyberbullying cases versus
 non-cyberbullying cases.
+
+```{r include=FALSE}
+ggplot(data=posts_data_balanced, aes(x=is_bullying)) + geom_bar()
+```
 
 ```{r}
 set.seed(42)
@@ -418,7 +428,7 @@ test_balanced <- posts_data_balanced[part == 2, ]
 
 We split the data using a 60:40 split. This is for the balanced data.
 
-```{r}
+```{r cache=TRUE}
 write.csv(posts_data_balanced, file="Data/clean_posts_dtm_balanced_sample.csv")
 write.csv(train_balanced, file="Data/train_balanced.csv")
 write.csv(test_balanced, file="Data/test_balanced.csv")
@@ -452,7 +462,7 @@ lol_tibble <- tibble(txt = lol_posts$html_message)
 lol_tibble #transforming the HTML messages into a tibble for an easier workflow
 ```
 
-```{r}
+```{r message=FALSE}
 lol_tibble <- lol_tibble%>% 
     mutate(linenumber = row_number()) %>%
  unnest_tokens(word, txt) %>% anti_join(stop_words)
@@ -464,8 +474,8 @@ lol_counts <- lol_tibble %>% count(word, sort=TRUE)
 lol_counts #sorting words by count
 ```
 
-```{r}
-wordcloud(lol_counts$word, lol_counts$n, 
+```{r warning=FALSE, cache=TRUE}
+wordcloud(lol_counts$word, lol_counts$n, max.words = 250,
           min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
   #creating a word cloud out of sorted list
 ```
@@ -537,7 +547,7 @@ lol_bigram_graph <- lol_separated_bigrams %>%
 lol_bigram_graph  #creating bigram graph
 ```
 
-```{r}
+```{r warning=FALSE, cache=TRUE}
 ggraph(lol_bigram_graph, layout = "fr") +
   geom_edge_link() +
   geom_node_point() +
@@ -582,7 +592,7 @@ wow_counts #sorting and counting the remaining words
 ```
 
 ```{r}
-wordcloud(wow_counts$word, wow_counts$n, 
+wordcloud(wow_counts$word, wow_counts$n, max.words = 250,
           min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
   #creating word cloud
 ```
@@ -676,7 +686,7 @@ train_control = trainControl(method = "cv", number = 5)
 
 ## SVM
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 set.seed(42)
 
 tic()
@@ -691,7 +701,7 @@ svm_pred_y = predict(svm_model, test_balanced)
 
 ## MLP
 
-```{r}
+```{r cache=TRUE}
 set.seed(42)
 tic()
 
@@ -730,7 +740,7 @@ consistent when comparing tuned models).
 
 ## SVM Linear kernel
 
-```{r}
+```{r warning=FALSE}
 set.seed(42)
 
 tic()
@@ -744,7 +754,7 @@ svm_tuned_pred_y = predict(svm_linear_tuned, test_balanced)
 
 ## SVM Polynomial kernel
 
-```{r}
+```{r warning=FALSE}
 set.seed(42)
 
 tic()
@@ -759,7 +769,7 @@ svm_poly_pred_y = predict(svm_model_poly, test_balanced)
 
 ## SVM RBF Kernel
 
-```{r}
+```{r warning=FALSE, cache=TRUE}
 set.seed(42)
 
 tic()
@@ -775,7 +785,7 @@ svm_rbf_pred_y = predict(svm_model_rbf, test_balanced)
 
 ## MLP Tuned
 
-```{r}
+```{r cache=TRUE}
 set.seed(42)
 
 tic()
@@ -905,13 +915,13 @@ plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, mode
 
 ### Non-tuned models
 
-```{r}
+```{r message=FALSE}
 plot_roc_curves(svm_pred_y, mlp_pred_y, glmnet_pred_y, c("SVM", "MLP", "GLMNET"))
 ```
 
 ### Comparing tuned SVM models
 
-```{r}
+```{r message=FALSE}
 plot_roc_curves(svm_tuned_pred_y, svm_poly_pred_y, svm_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
 ```
 
@@ -921,7 +931,7 @@ kernel with other models.
 
 ### Tuned models
 
-```{r}
+```{r message=FALSE}
 plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
 ```
 
@@ -960,7 +970,7 @@ create_table <- function(prediction_list, time_to_train_c) {
 }
 ```
 
-```{r}
+```{r message=FALSE, cache=TRUE}
 prediction_list = list(svm_linear = svm_tuned_pred_y, svm_poly = svm_poly_pred_y, svm_rbf = svm_rbf_pred_y, mlp = mlp_tuned_pred_y, glmnet = glm_tuned_pred_y)
 time_to_train = c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_taken, mlp_time_taken, glmnet_time_taken)
 results = create_table(prediction_list, time_to_train)
@@ -990,7 +1000,7 @@ results with other group members.
 
 # Individual contributions
 Thomas Newton
-INSERT HERE
+I was responsible for predictive modelling and hyperparameter tuning. I also created the problem statements and references.
 
 Leon Harper
 INSERT HERE

@@ -1,14 +1,14 @@
 ---
 title: "Pro Data Scientists - Cyberbullying Classifier"
 output:
-  html_document:
-    toc: yes
-    toc_depth: '4'
-    df_print: paged
   pdf_document:
     toc: yes
     toc_depth: 4
     latex_engine: xelatex
+  html_document:
+    toc: yes
+    toc_depth: '4'
+    df_print: paged
 editor_options:
   markdown:
     wrap: 72
@@ -83,7 +83,9 @@ cat("\014")
 ```
 
 # Step 1: Problem statement
+
 ## World of Warcraft Problem Statement
+
 World of Warcraft is a popular MMORPG (Massively multiplayer online
 role-playing game) video game with millions of user every month. Due to
 having this many players there is bound to be some cyberbullying/toxic
@@ -108,16 +110,33 @@ only censors certain words/phrases. Our model will be able to detect
 strings of words rather than just certain ones.
 
 ## League of Legends problem statement
-League of Legends is a popular MOBA (Multiplayer online battle arena) video game with millions of users every month. Due to having this many players there is bound to be some cyberbullying/toxic players included in those millions of players, League however is especially toxic and is often ranked as one of the most toxic gaming community’s today. The current ban rate of all accounts as of September 2022 is 2.25% (Around 2,632,500 account). In a survey by ADL (Anti-Defamation League) it was found 65% of adults ages 18-45 have been harassed/bullied in League of Legends in 2021.
 
-The objective of this project is to create a model that will be able to detect cyberbullying/toxicity. By using the League of legends dataset provided to us it will allow the model to have reference for comments deemed as bullying.
+League of Legends is a popular MOBA (Multiplayer online battle arena)
+video game with millions of users every month. Due to having this many
+players there is bound to be some cyberbullying/toxic players included
+in those millions of players, League however is especially toxic and is
+often ranked as one of the most toxic gaming community's today. The
+current ban rate of all accounts as of September 2022 is 2.25% (Around
+2,632,500 account). In a survey by ADL (Anti-Defamation League) it was
+found 65% of adults ages 18-45 have been harassed/bullied in League of
+Legends in 2021.
 
-This would be a classification model that when give a comment/statement would decided whether it is bullying or not bullying, it will be able to do this by detecting certain words and phrases.
+The objective of this project is to create a model that will be able to
+detect cyberbullying/toxicity. By using the League of legends dataset
+provided to us it will allow the model to have reference for comments
+deemed as bullying.
 
-Currently most video games have an option to filter chat, however this only censors certain words/phrases. Our model will be able to detect strings of words rather than just certain ones.
+This would be a classification model that when give a comment/statement
+would decided whether it is bullying or not bullying, it will be able to
+do this by detecting certain words and phrases.
 
-ADL Survey: Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021 (adl.org)
-# Step 2: Importing data
+Currently most video games have an option to filter chat, however this
+only censors certain words/phrases. Our model will be able to detect
+strings of words rather than just certain ones.
+
+ADL Survey: Hate is No Game: Harassment and Positive Social Experiences
+in Online Games 2021 (adl.org) \# Step 2: Importing data
+
 ```{r warning=FALSE}
 wow_posts_df <- read.csv("Data/posts_wow.csv")
 wow_annotations_df <- read.csv("Data/annotations_wow.csv")
@@ -205,10 +224,13 @@ This data set has a total of 23 different topics.
 For pre-processing, we decided to merge the datasets as they are
 essentially identical to each other in terms of structure and we
 believed that this would simplify data pre-processing and remove code
-duplication. As we merged the datasets, we found that we could create a
-"is_bullying" column that would be used as a target variable for the
-model building process. We also created a "bullying_severity" column as
-each post can have multiple annotators for each cyberbullying post.
+duplication. We also ignored the annotation csv files (apart from
+feature extraction) as we found that there wasn't anything to clean (we
+would be just cleaning metadata). As we merged the datasets, we found
+that we could create a "is_bullying" column that would be used as a
+target variable for the model building process. We also created a
+"bullying_severity" column as each post can have multiple annotators for
+each cyberbullying post.
 
 After that, we extracted the messages out of the HTML in order to then
 pre-process the messages through stemming, removing punctuation and
@@ -443,6 +465,7 @@ sample_bullying = sample(is_bullying, nsamp)
 sample_not_bullying = sample(not_bullying, nsamp)
 posts_data_balanced = posts_data[c(sample_bullying, sample_not_bullying),]
 ```
+
 This creates a sample of the bullying data for balancing purposes.
 However, this comes at the expense of having much less data to work with
 as there are significantly less cyberbullying cases versus
@@ -547,10 +570,17 @@ wordcloud(lol_counts$word, lol_counts$n, max.words = 250,
           min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
   #creating a word cloud out of sorted list
 ```
-  
-By using a word cloud to analyse the HTML messages from the League of Legends boards, we have gained several insights into the issue of cyberbullying within the game.
 
-The word helped us to identify the most common words or phrases used in the chat. This allowed us to see if certain language or terminology was frequently used in a negative or bullying context. For example, the words "stupid" and "idiot" were often marked as cyberbullying, which could indicate that players were using those words to mock or belittle others.
+By using a word cloud to analyse the HTML messages from the League of
+Legends boards, we have gained several insights into the issue of
+cyberbullying within the game.
+
+The word helped us to identify the most common words or phrases used in
+the chat. This allowed us to see if certain language or terminology was
+frequently used in a negative or bullying context. For example, the
+words "stupid" and "idiot" were often marked as cyberbullying, which
+could indicate that players were using those words to mock or belittle
+others.
 
 ```{r}
 lol_bigrams <- tibble(txt = lol_posts$html_message) %>% 
@@ -622,12 +652,28 @@ ggraph(lol_bigram_graph, layout = "fr") +
   geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 ```
 
-For this project we used a bigram representation to quickly visualize the most common two-word phrases in this large text dataset. This helped us to get a sense of the collocation of words in the data, which gave important insights into the meaning and context of the text.
+For this project we used a bigram representation to quickly visualize
+the most common two-word phrases in this large text dataset. This helped
+us to get a sense of the collocation of words in the data, which gave
+important insights into the meaning and context of the text.
 
-Additionally, using a bigram representation allowed us to easily identify any unusual or unexpected combinations of words that might be present in the dataset. This was particularly useful when working with unstructured data, as it allowed us to quickly see into some of the relationships between words within the text. By identifying the most common two-word phrases, we were able to see how words were collocating in the dataset, which gave us an idea of how they were being used and the relationships between them. This helped us to identify patterns and themes in the data that would have been difficult to discern by just looking at individual words.
-  
-In summary, using a bigram representation was a valuable tool for our exploratory data analysis, as it helped us to quickly gain a better understanding of our dataset by identifying patterns and themes, and also helped us to identify any unusual or unexpected combinations of words that might be present in the HTML message data.
-  
+Additionally, using a bigram representation allowed us to easily
+identify any unusual or unexpected combinations of words that might be
+present in the dataset. This was particularly useful when working with
+unstructured data, as it allowed us to quickly see into some of the
+relationships between words within the text. By identifying the most
+common two-word phrases, we were able to see how words were collocating
+in the dataset, which gave us an idea of how they were being used and
+the relationships between them. This helped us to identify patterns and
+themes in the data that would have been difficult to discern by just
+looking at individual words.
+
+In summary, using a bigram representation was a valuable tool for our
+exploratory data analysis, as it helped us to quickly gain a better
+understanding of our dataset by identifying patterns and themes, and
+also helped us to identify any unusual or unexpected combinations of
+words that might be present in the HTML message data.
+
 ## World of Warcraft analysis
 
 ```{r}
@@ -665,11 +711,19 @@ wordcloud(wow_counts$word, wow_counts$n, max.words = 250,
   #creating word cloud
 ```
 
-We used a word cloud to quickly visualise the most common words in our large text dataset. This helped us to get a sense of the overall topic and context of the data, as well as identify any patterns or themes that might be present.
+We used a word cloud to quickly visualise the most common words in our
+large text dataset. This helped us to get a sense of the overall topic
+and context of the data, as well as identify any patterns or themes that
+might be present.
 
-Additionally, using a word cloud allowed us to easily identify any outliers or unusual words that might be present in the dataset, which could then be further investigated. This was particularly useful when working with unstructured data, as it allowed us to quickly gain insights without having to manually sift through all of the text. Using a word cloud was a valuable tool in our exploratory data analysis and helped us to quickly gain a better understanding of the dataset.
-  
-  
+Additionally, using a word cloud allowed us to easily identify any
+outliers or unusual words that might be present in the dataset, which
+could then be further investigated. This was particularly useful when
+working with unstructured data, as it allowed us to quickly gain
+insights without having to manually sift through all of the text. Using
+a word cloud was a valuable tool in our exploratory data analysis and
+helped us to quickly gain a better understanding of the dataset.
+
 ```{r}
 wow_bigrams <- tibble(txt = wow_posts$html_message) %>% 
   unnest_tokens(bigram, txt, token = "ngrams", n = 2)
@@ -739,7 +793,11 @@ ggraph(wow_bigram_graph, layout = "fr") +
   geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 ```
 
-The bigram representation helped us to identify the most common two-word phrases used in the chat. This allowed us to see the distribution of words and understand how players were communicating with each other. For example, the phrase "commit suicide" can be seen in the bigram - messages with this phrase often were flagged as cyberbulling.
+The bigram representation helped us to identify the most common two-word
+phrases used in the chat. This allowed us to see the distribution of
+words and understand how players were communicating with each other. For
+example, the phrase "commit suicide" can be seen in the bigram -
+messages with this phrase often were flagged as cyberbulling.
 
 # Step 5: Predictive modelling (combined dataset)
 
@@ -758,6 +816,7 @@ train_control = trainControl(method = "cv", number = 5)
 ```
 
 ## SVM
+
 ```{r message=FALSE, warning=FALSE}
 set.seed(42)
 
@@ -781,13 +840,20 @@ svm_pred_y = predict(svm_model, test_balanced)
 svm_wow_pred_y = predict(svm_wow_model, wow_test_balanced)
 svm_lol_pred_y = predict(svm_lol_model, lol_test_balanced)
 ```
-Here we create the trained model, with "is_bullying" as an output as this is what we want to test
-The method is the type of model we want to use
-trControl takes control of our parameters
 
-SVM (Support Vector Machine) is a model that uses classification algorithms for two-group classification problems. We used an SVM model here due to the fact our dataset is balanced. We also decided to try out a linear kernel as we believe that we are working with linearly separable datasets and we have found that linear kernels are common in text classification problems.
+Here we create the trained model, with "is_bullying" as an output as
+this is what we want to test The method is the type of model we want to
+use trControl takes control of our parameters
+
+SVM (Support Vector Machine) is a model that uses classification
+algorithms for two-group classification problems. We used an SVM model
+here due to the fact our dataset is balanced. We also decided to try out
+a linear kernel as we believe that we are working with linearly
+separable datasets and we have found that linear kernels are common in
+text classification problems.
 
 ## MLP
+
 ```{r cache=TRUE}
 set.seed(42)
 
@@ -811,11 +877,18 @@ mlp_pred_y = predict(mlp_model, test_balanced)
 mlp_lol_pred_y = predict(mlp_lol_model, lol_test_balanced)
 mlp_wow_pred_y = predict(mlp_wow_model, wow_test_balanced)
 ```
-Here we create the trained model, with "is_bullying" as an output as this is what we want to test
-The method is the type of model we want to use
-trControl takes control of our parameters
 
-MLP (Multilayer Perceptrons) are very flexible and can be used generally to learn a mapping from inputs to outputs. MLPs are suitable for classification prediction problems which is exactly what we want. They are comprised of one or more layers of neurons. Data is fed to the input layer, there may be one or more hidden layers providing levels of abstraction, and predictions are made on the output layer, also called the visible layer.
+Here we create the trained model, with "is_bullying" as an output as
+this is what we want to test The method is the type of model we want to
+use trControl takes control of our parameters
+
+MLP (Multilayer Perceptrons) are very flexible and can be used generally
+to learn a mapping from inputs to outputs. MLPs are suitable for
+classification prediction problems which is exactly what we want. They
+are comprised of one or more layers of neurons. Data is fed to the input
+layer, there may be one or more hidden layers providing levels of
+abstraction, and predictions are made on the output layer, also called
+the visible layer.
 
 ## glmnet
 
@@ -842,10 +915,15 @@ glmnet_pred_y = predict(glmnet_model, test_balanced)
 glmnet_lol_pred_y = predict(glmnet_lol_model, lol_test_balanced)
 glmnet_wow_pred_y = predict(glmnet_wow_model, wow_test_balanced)
 ```
-We have utilized the glmnet package as it has extremely efficient procedures for utilising lasso or elastic-net regularization for logistic regression. Since this is a classification problem, logistic regression will be used. 
 
-When we use caret to train a model by the "glmnet" tag, caret will select a generalized linear model (logistic regression in this case) via penalized maximum likelihood.
-# Step 6: Hyperparameter Tuning
+We have utilized the glmnet package as it has extremely efficient
+procedures for utilising lasso or elastic-net regularization for
+logistic regression. Since this is a classification problem, logistic
+regression will be used.
+
+When we use caret to train a model by the "glmnet" tag, caret will
+select a generalized linear model (logistic regression in this case) via
+penalized maximum likelihood. \# Step 6: Hyperparameter Tuning
 
 ```{r}
 random_train_control_grid = caret::trainControl(method="cv", number=3, search="random")
@@ -910,6 +988,7 @@ svm_wow_poly_pred_y = predict(svm_wow_model_poly, wow_test_balanced)
 ```
 
 ## SVM RBF Kernel
+
 ```{r warning=FALSE, cache=TRUE}
 set.seed(42)
 
@@ -962,6 +1041,7 @@ mlp_wow_tuned_pred_y = predict(mlp_wow_model_tuned, wow_test_balanced)
 ```
 
 ## GLMNET Tuned
+
 ```{r}
 set.seed(42)
 
@@ -1000,16 +1080,16 @@ recall which is exactly what we need. The F1 score is also robust
 against uneven class distributions unlike accuracy which gives us
 flexibility in how we should tweak pre-processing.
 
-We have utilised the following to create an effective evaluation: 
+We have utilised the following to create an effective evaluation:
 
-1. Created confusion matrices that illustrate where misclassifications are
-taking place 
-2. Plotted ROC curves to display the model performance 
-3. Created a table of metrics showing the recall, precision, f1 score and
-the time taken to train the models We wanted to show how long it took to
-train each model as this would help identify production costs for each
-model (the models would take much longer to train on big batches of
-data).
+1.  Created confusion matrices that illustrate where misclassifications
+    are taking place
+2.  Plotted ROC curves to display the model performance
+3.  Created a table of metrics showing the recall, precision, f1 score
+    and the time taken to train the models We wanted to show how long it
+    took to train each model as this would help identify production
+    costs for each model (the models would take much longer to train on
+    big batches of data).
 
 ## Creating confusion matrices (combined dataset)
 
@@ -1073,6 +1153,7 @@ glm_tuned_cf_matrix
 ```
 
 ## Creating confusion matrices (WoW dataset)
+
 ```{r}
 svm_wow_confusion_matrix <- caret::confusionMatrix(svm_wow_pred_y, wow_test_balanced$is_bullying)
 mlp_wow_confusion_matrix <- caret::confusionMatrix(mlp_wow_pred_y, wow_test_balanced$is_bullying)
@@ -1133,6 +1214,7 @@ glm_tuned_cf_matrix
 ```
 
 ## Creating confusion matrices (LoL dataset)
+
 ```{r}
 svm_lol_confusion_matrix <- caret::confusionMatrix(svm_lol_pred_y, lol_test_balanced$is_bullying)
 mlp_lol_confusion_matrix <- caret::confusionMatrix(mlp_lol_pred_y, lol_test_balanced$is_bullying)
@@ -1237,10 +1319,14 @@ then print the AUC values for each curve.
 ## ROC Curves (WoW dataset)
 
 ### Non-tuned models
+
 ```{r message=FALSE}
 plot_roc_curves(svm_wow_pred_y, mlp_wow_pred_y, glmnet_wow_pred_y, c("SVM", "MLP", "GLMNET"), wow_test_balanced)
 ```
-It would appear that the glmnet model is very effective when used with the world of warcraft dataset as it has a much greater specificity than the other models.
+
+It would appear that the glmnet model is very effective when used with
+the world of warcraft dataset as it has a much greater specificity than
+the other models.
 
 ### Comparing tuned SVM models
 
@@ -1248,24 +1334,32 @@ It would appear that the glmnet model is very effective when used with the world
 plot_roc_curves(svm_tuned_wow_pred_y, svm_wow_poly_pred_y, svm_wow_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"), wow_test_balanced)
 ```
 
-It would appear that the linear model has the greatest AUC. We can compare this model with other models.
+It would appear that the linear model has the greatest AUC. We can
+compare this model with other models.
 
 ### Tuned models
 
 ```{r message=FALSE}
 plot_roc_curves(svm_tuned_wow_pred_y, mlp_wow_tuned_pred_y, glm_wow_tuned_pred_y, c("SVM Linear", "MLP Tuned", "GLMNET"), wow_test_balanced)
 ```
-Surprisingly enough, the glmnet model has the worst performance out of all the models despite being tuned. This would suggest that the tuning had an overall negative effect.
+
+Surprisingly enough, the glmnet model has the worst performance out of
+all the models despite being tuned. This would suggest that the tuning
+had an overall negative effect.
 
 ## ROC Curves (LoL dataset)
 
 ### Non-tuned models
+
 ```{r message=FALSE}
 plot_roc_curves(svm_lol_pred_y, mlp_lol_pred_y, glmnet_lol_pred_y, c("SVM", "MLP", "GLMNET"), lol_test_balanced)
 ```
-It appears that glmnet consistently has good specificity when non-tuned, giving it a decent AUC score. 
+
+It appears that glmnet consistently has good specificity when non-tuned,
+giving it a decent AUC score.
 
 ### Comparing tuned SVM models
+
 ```{r message=FALSE}
 plot_roc_curves(svm_tuned_lol_pred_y, svm_lol_poly_pred_y, svm_lol_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"), lol_test_balanced)
 ```
@@ -1279,9 +1373,11 @@ kernel with other models.
 ```{r message=FALSE}
 plot_roc_curves(svm_tuned_lol_pred_y, mlp_lol_tuned_pred_y, glm_lol_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"), lol_test_balanced)
 ```
+
 It would appear that MLP has the greatest AUC score when tuned.
 
 ## Table of metrics
+
 For each model, we will be calculating the evaluation metrics we will be
 using (time taken, precision, sensitivity, f1 score, AUC) to create a
 table of metrics which can be used to evaluate each model. We are
@@ -1313,6 +1409,7 @@ create_table <- function(prediction_list, time_to_train_c, test_data) {
 ```
 
 ### Combined dataset table
+
 ```{r message=FALSE, cache=TRUE}
 prediction_list = list(svm_linear = svm_tuned_pred_y, svm_poly = svm_poly_pred_y, svm_rbf = svm_rbf_pred_y, mlp = mlp_tuned_pred_y, glmnet = glm_tuned_pred_y)
 time_to_train = c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_taken, mlp_time_taken, glmnet_time_taken)
@@ -1321,59 +1418,86 @@ results
 ```
 
 From these results, it would appear that the glmnet logistic regression
-model has the greatest performance as it has the greatest F1 score
-and AUC score. It is also relatively quick to train which can reduce
-costs if deployed in a large-scale system where the model may be
-continuously trained with new data. However, the SVM model with a
-polynomial kernel appears to be slightly better in terms of recall than
-the glmnet model. However, this difference is very small to where it
-won't really amount to anything.
+model has the greatest performance as it has the greatest F1 score and
+AUC score. It is also relatively quick to train which can reduce costs
+if deployed in a large-scale system where the model may be continuously
+trained with new data. However, the SVM model with a polynomial kernel
+appears to be slightly better in terms of recall than the glmnet model.
+However, this difference is very small to where it won't really amount
+to anything.
 
 We can also see that the mlp model performed the worst as it took a long
 time to train on a relatively small sample of data (almost 2 minutes)
 and it has the worst F1 and AUC scores.
 
 ### WoW dataset table
+
 ```{r message=FALSE}
 prediction_list = list(svm_linear = svm_tuned_wow_pred_y, svm_poly = svm_wow_poly_pred_y, svm_rbf = svm_wow_rbf_pred_y, mlp = mlp_wow_tuned_pred_y, glmnet = glm_wow_tuned_pred_y)
 time_to_train = c(svm_wow_time_taken, svm_wow_poly_tuned_time_taken, svm_wow_rbf_tuned_time_taken, mlp_wow_time_taken, glmnet_wow_time_taken)
 results = create_table(prediction_list, time_to_train, wow_test_balanced)
 results
 ```
-From these results, we can see that the svm_linear model has the greatest f1 score (69%) and the greatest AUC score. Compared to the combined datasets table, glmnet performs significantly worse which could suggest that glmnet works significantly better with larger datasets.
+
+From these results, we can see that the svm_linear model has the
+greatest f1 score (69%) and the greatest AUC score. Compared to the
+combined datasets table, glmnet performs significantly worse which could
+suggest that glmnet works significantly better with larger datasets.
 
 ### LoL Dataset Table
+
 ```{r message=FALSE}
 prediction_list = list(svm_linear = svm_tuned_lol_pred_y, svm_poly = svm_lol_poly_pred_y, svm_rbf = svm_lol_rbf_pred_y, mlp = mlp_lol_tuned_pred_y, glmnet = glm_lol_tuned_pred_y)
 time_to_train = c(svm_lol_time_taken, svm_lol_poly_tuned_time_taken, svm_lol_rbf_tuned_time_taken, mlp_lol_time_taken, glmnet_lol_time_taken)
 lol_results = create_table(prediction_list, time_to_train, lol_test_balanced)
 lol_results
 ```
-From these results, we can see that the tuned MLP model performs the greatest for the League of Legends dataset. However, it takes a long time to train which could prove computationally expensive when provided with more data. We can see a bias towards a higher recall versus precision when comparing the precision values to the recall values.
+
+From these results, we can see that the tuned MLP model performs the
+greatest for the League of Legends dataset. However, it takes a long
+time to train which could prove computationally expensive when provided
+with more data. We can see a bias towards a higher recall versus
+precision when comparing the precision values to the recall values.
 
 ### Output results
+
 ```{r}
 write.csv(lol_results, "Data/lol_results.csv")
 write.csv(wow_results, "Data/wow_results.csv")
 write.csv(results, "Data/results.csv")
 ```
 
-We output the table results to a csv file to make it easy to share results with other group members.
+We output the table results to a csv file to make it easy to share
+results with other group members.
 
 # Individual contributions
-Thomas Newton
-I was responsible for predictive modelling and hyperparameter tuning. I also created the problem statements and references.
 
-Leon Harper
-I was responsible for importing the data (converting it from an SQL Dump file into corresponding csv files), cleaning the data and evaluating the performance of relevant models. I helped manage the project through the use of a trello board and I helped individuals on the project who were struggling.
+**Thomas Newton**
 
-Michal Jedruszczak
-In this project I was responsible for the preliminary EDA and the final EDA. I
-also created the contents section and made sure that all of the
+I was responsible for predictive modelling and hyperparameter tuning. I
+also created the problem statements and references.
+
+**Leon Harper**
+
+I was responsible for importing the data (converting it from an SQL Dump
+file into corresponding csv files), cleaning the data and evaluating the
+performance of relevant models. I helped manage the project through the
+use of a trello board and I helped individuals on the project who were
+struggling.
+
+**Michal Jedruszczak**
+
+In this project I was responsible for the preliminary EDA and the final
+EDA. I also created the contents section and made sure that all of the
 references were in MMU Harvard format.
 
 # References
-Anti-Defamation League (2022) *Hate is No Game: Harassment and Positive Social Experiences in Online Games 2021* [Online][Accessed: November 19, 2022]
+
+Anti-Defamation League (2022) *Hate is No Game: Harassment and Positive
+Social Experiences in Online Games 2021* [Online][Accessed: November 19,
+2022]
 <https://www.adl.org/resources/report/hate-no-game-harassment-and-positive-social-experiences-online-games-2021>
-  
-Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online Communities" (2016). *Research Papers*. Paper 61. <http://aisel.aisnet.org/ecis2016_rp/61>
+
+Bretschneider, U. and Peters, R. "Detecting Cyberbullying in Online
+Communities" (2016). *Research Papers*. Paper 61.
+<http://aisel.aisnet.org/ecis2016_rp/61>

@@ -24,7 +24,6 @@ Michal Jedruszczak (21440496)
 
 These are the team members for the group project.
 
-# Initial set-up
 ```{r include= FALSE, cache=TRUE}
 r = getOption("repos")
 r["CRAN"] = "http://cran.us.r-project.org"
@@ -378,12 +377,37 @@ posts_data = as.data.frame(as.matrix(dtm))
 posts_data$is_bullying = as.factor(posts_df$is_bullying)
 ```
 
+```{r}
+lol_posts <- posts_df %>% filter(dataset=="LoL")
+wow_posts <- posts_df %>% filter(dataset=="WoW")
+
+lol_corpus = VCorpus(VectorSource(lol_posts$html_message))
+lol_dtm = DocumentTermMatrix(lol_corpus)
+lol_dtm = removeSparseTerms(lol_dtm, 0.999)
+lol_posts_data = as.data.frame(as.matrix(lol_dtm))
+lol_posts_data$is_bullying = as.factor(lol_posts$is_bullying)
+
+wow_corpus = VCorpus(VectorSource(wow_posts$html_message))
+wow_dtm = DocumentTermMatrix(wow_corpus)
+wow_dtm = removeSparseTerms(wow_dtm, 0.999)
+wow_posts_data = as.data.frame(as.matrix(wow_dtm))
+wow_posts_data$is_bullying = as.factor(wow_posts$is_bullying)
+```
+
 We create a document term matrix from the html messages and we remove
 sparse terms (i.e. empty values) using removeSparseTerms. We then assign
 a "is_bullying" column for model building and EDA purposes.
 
-```{r include=FALSE}
+```{r}
 ggplot(data=posts_data, aes(x=is_bullying)) + geom_bar()
+```
+
+```{r}
+ggplot(data=wow_posts_data, aes(x=is_bullying)) + geom_bar()
+```
+
+```{r}
+ggplot(data=lol_posts_data, aes(x=is_bullying)) + geom_bar()
 ```
 
 As we can see, the data is heavily imbalanced where there isn't many
@@ -392,6 +416,24 @@ where it is more accurate at classifying non-bullying cases rather than
 bullying cases. We will use undersampling because we have plenty of
 non-bullying data but not enough data for bullying cases (this means we
 can afford to reduce how much data we are dealing with).
+
+```{r}
+is_bullying = which(lol_posts_data$is_bullying == 1)
+not_bullying = which(lol_posts_data$is_bullying == 0)
+nsamp = min(length(is_bullying), length(not_bullying))
+sample_bullying = sample(is_bullying, nsamp)
+sample_not_bullying = sample(not_bullying, nsamp)
+lol_posts_data_balanced = lol_posts_data[c(sample_bullying, sample_not_bullying),]
+```
+
+```{r}
+is_bullying = which(wow_posts_data$is_bullying == 1)
+not_bullying = which(wow_posts_data$is_bullying == 0)
+nsamp = min(length(is_bullying), length(not_bullying))
+sample_bullying = sample(is_bullying, nsamp)
+sample_not_bullying = sample(not_bullying, nsamp)
+wow_posts_data_balanced = wow_posts_data[c(sample_bullying, sample_not_bullying),]
+```
 
 ```{r}
 is_bullying = which(posts_data$is_bullying == 1)
@@ -406,8 +448,16 @@ However, this comes at the expense of having much less data to work with
 as there are significantly less cyberbullying cases versus
 non-cyberbullying cases.
 
-```{r include=FALSE}
+```{r}
 ggplot(data=posts_data_balanced, aes(x=is_bullying)) + geom_bar()
+```
+
+```{r}
+ggplot(data=wow_posts_data_balanced, aes(x=is_bullying)) + geom_bar()
+```
+
+```{r}
+ggplot(data=lol_posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ```
 
 ```{r}
@@ -428,8 +478,26 @@ test_balanced <- posts_data_balanced[part == 2, ]
 
 We split the data using a 60:40 split. This is for the balanced data.
 
+```{r}
+set.seed(42)
+part <- sample(2, nrow(lol_posts_data_balanced), replace=TRUE, prob=c(0.6, 0.4))
+lol_train_balanced <- lol_posts_data_balanced[part == 1, ]
+lol_test_balanced <- lol_posts_data_balanced[part == 2, ]
+```
+
+```{r}
+set.seed(42)
+part <- sample(2, nrow(wow_posts_data_balanced), replace=TRUE, prob=c(0.6, 0.4))
+wow_train_balanced <- wow_posts_data_balanced[part == 1, ]
+wow_test_balanced <- wow_posts_data_balanced[part == 2, ]
+```
+
 ```{r cache=TRUE}
 write.csv(posts_data_balanced, file="Data/clean_posts_dtm_balanced_sample.csv")
+write.csv(wow_train_balanced, file="Data/clean_wow_train_balanced_sample.csv")
+write.csv(wow_test_balanced, file="Data/clean_wow_test_balanced_sample.csv")
+write.csv(lol_train_balanced, file="Data/clean_lol_train_balanced_sample.csv")
+write.csv(lol_test_balanced, file="Data/clean_lol_test_balanced_sample.csv")
 write.csv(train_balanced, file="Data/train_balanced.csv")
 write.csv(test_balanced, file="Data/test_balanced.csv")
 write.csv(train, file="Data/train.csv")
@@ -673,7 +741,7 @@ ggraph(wow_bigram_graph, layout = "fr") +
 
 The bigram representation helped us to identify the most common two-word phrases used in the chat. This allowed us to see the distribution of words and understand how players were communicating with each other. For example, the phrase "commit suicide" can be seen in the bigram - messages with this phrase often were flagged as cyberbulling.
 
-# Step 5: Predictive modelling
+# Step 5: Predictive modelling (combined dataset)
 
 ## Initial setup
 
@@ -681,35 +749,62 @@ The bigram representation helped us to identify the most common two-word phrases
 train_balanced$is_bullying = as.factor(train_balanced$is_bullying)
 test_balanced$is_bullying = as.factor(test_balanced$is_bullying)
 
+lol_train_balanced$is_bullying = as.factor(lol_train_balanced$is_bullying)
+lol_test_balanced$is_bullying = as.factor(lol_test_balanced$is_bullying)
+wow_train_balanced$is_bullying = as.factor(wow_train_balanced$is_bullying)
+wow_test_balanced$is_bullying = as.factor(wow_test_balanced$is_bullying)
+
 train_control = trainControl(method = "cv", number = 5)
 ```
 
 ## SVM
-
 ```{r message=FALSE, warning=FALSE}
 set.seed(42)
 
 tic()
-
-svm_model = caret::train(is_bullying~., data=train_balanced , method =  "svmLinear" , trControl = train_control, verbose=FALSE)
-
+svm_model = caret::train(is_bullying~., data=train_balanced , method ="svmLinear" , trControl = train_control, verbose=FALSE)
 svm_toc <- toc(quiet=T)
 
+tic()
+svm_wow_model = caret::train(is_bullying~., data=wow_train_balanced, method ="svmLinear" , trControl = train_control, verbose=FALSE)
+svm_wow_toc <- toc(quiet=T)
+
+tic()
+svm_lol_model = caret::train(is_bullying~., data=lol_train_balanced, method ="svmLinear" , trControl = train_control, verbose=FALSE)
+svm_lol_toc <- toc(quiet=T)
+
 svm_time_taken <- svm_toc$toc - svm_toc$tic
+svm_lol_time_taken <- svm_lol_toc$toc - svm_lol_toc$tic
+svm_wow_time_taken <- svm_wow_toc$toc - svm_wow_toc$tic
+
 svm_pred_y = predict(svm_model, test_balanced)
+svm_wow_pred_y = predict(svm_wow_model, wow_test_balanced)
+svm_lol_pred_y = predict(svm_lol_model, lol_test_balanced)
 ```
 
 ## MLP
-
 ```{r cache=TRUE}
 set.seed(42)
-tic()
 
-mlp_model = caret::train(is_bullying~., data=train_balanced , method =  "mlp" , trControl = train_control, verbose=FALSE)
+tic()
+mlp_model = caret::train(is_bullying~., data=train_balanced , method ="mlp" , trControl = train_control, verbose=FALSE)
 mlp_toc <- toc(quiet=T)
 
+tic()
+mlp_wow_model = caret::train(is_bullying~., data=wow_train_balanced , method ="mlp" , trControl = train_control, verbose=FALSE)
+mlp_wow_toc <- toc(quiet=T)
+
+tic()
+mlp_lol_model = caret::train(is_bullying~., data=lol_train_balanced , method = "mlp" , trControl = train_control, verbose=FALSE)
+mlp_lol_toc <- toc(quiet=T)
+
 mlp_time_taken <- mlp_toc$toc - mlp_toc$tic
+mlp_wow_time_taken <- mlp_wow_toc$toc - mlp_wow_toc$tic
+mlp_lol_time_taken <- mlp_lol_toc$toc - mlp_lol_toc$tic
+
 mlp_pred_y = predict(mlp_model, test_balanced)
+mlp_lol_pred_y = predict(mlp_lol_model, lol_test_balanced)
+mlp_wow_pred_y = predict(mlp_wow_model, wow_test_balanced)
 ```
 
 ## glmnet
@@ -718,12 +813,24 @@ mlp_pred_y = predict(mlp_model, test_balanced)
 set.seed(42)
 
 tic()
-
 glmnet_model = caret::train(is_bullying~., data=train_balanced , method = "glmnet" , trControl = train_control, verbose=FALSE)
 glmnet_toc <- toc(quiet=T)
 
+tic()
+glmnet_wow_model = caret::train(is_bullying~., data=wow_train_balanced , method = "glmnet" , trControl = train_control, verbose=FALSE)
+glmnet_wow_toc <- toc(quiet=T)
+
+tic()
+glmnet_lol_model = caret::train(is_bullying~., data=lol_train_balanced , method = "glmnet" , trControl = train_control, verbose=FALSE)
+glmnet_lol_toc <- toc(quiet=T)
+
 glmnet_time_taken <- glmnet_toc$toc - glmnet_toc$tic
+glmnet_wow_time_taken <- glmnet_wow_toc$toc - glmnet_wow_toc$tic
+glmnet_lol_time_taken <- glmnet_lol_toc$toc - glmnet_lol_toc$tic
+
 glmnet_pred_y = predict(glmnet_model, test_balanced)
+glmnet_lol_pred_y = predict(glmnet_lol_model, lol_test_balanced)
+glmnet_wow_pred_y = predict(glmnet_wow_model, wow_test_balanced)
 ```
 
 # Step 6: Hyperparameter Tuning
@@ -744,12 +851,24 @@ consistent when comparing tuned models).
 set.seed(42)
 
 tic()
-
 svm_linear_tuned = caret::train(is_bullying~ ., data = train_balanced, method = "svmLinear", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
-
 svm_linear_tuned_toc = toc(quiet=T)
+
+tic()
+svm_linear_wow_tuned = caret::train(is_bullying~ ., data = wow_train_balanced, method = "svmLinear", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+svm_linear_wow_tuned_toc = toc(quiet=T)
+
+tic()
+svm_linear_lol_tuned = caret::train(is_bullying~ ., data = lol_train_balanced, method = "svmLinear", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+svm_linear_lol_tuned_toc = toc(quiet=T)
+
 svm_linear_tuned_time_taken <- svm_linear_tuned_toc$toc - svm_linear_tuned_toc$tic
+svm_linear_wow_tuned_time_taken <- svm_linear_wow_tuned_toc$toc - svm_linear_wow_tuned_toc$tic
+svm_linear_lol_tuned_time_taken <- svm_linear_lol_tuned_toc$toc - svm_linear_lol_tuned_toc$tic
+
 svm_tuned_pred_y = predict(svm_linear_tuned, test_balanced)
+svm_tuned_wow_pred_y = predict(svm_linear_wow_tuned, wow_test_balanced)
+svm_tuned_lol_pred_y = predict(svm_linear_lol_tuned, lol_test_balanced)
 ```
 
 ## SVM Polynomial kernel
@@ -758,29 +877,50 @@ svm_tuned_pred_y = predict(svm_linear_tuned, test_balanced)
 set.seed(42)
 
 tic()
-
 svm_model_poly = caret::train(is_bullying~ ., data = train_balanced, method = "svmPoly", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
-
 svm_poly_toc = toc(quiet=T)
 
+tic()
+svm_lol_model_poly = caret::train(is_bullying~ ., data = lol_train_balanced, method = "svmPoly", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+svm_poly_lol_toc = toc(quiet=T)
+
+tic()
+svm_wow_model_poly = caret::train(is_bullying~ ., data = wow_train_balanced, method = "svmPoly", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+svm_poly_wow_toc = toc(quiet=T)
+
 svm_poly_tuned_time_taken = svm_poly_toc$toc - svm_poly_toc$tic
+svm_lol_poly_tuned_time_taken = svm_poly_lol_toc$toc - svm_poly_lol_toc$tic
+svm_wow_poly_tuned_time_taken = svm_poly_wow_toc$toc - svm_poly_wow_toc$tic
+
 svm_poly_pred_y = predict(svm_model_poly, test_balanced)
+svm_lol_poly_pred_y = predict(svm_lol_model_poly, lol_test_balanced)
+svm_wow_poly_pred_y = predict(svm_wow_model_poly, wow_test_balanced)
 ```
 
 ## SVM RBF Kernel
-
 ```{r warning=FALSE, cache=TRUE}
 set.seed(42)
 
 tic()
-
 svm_model_rbf = caret::train(is_bullying~ ., data = train_balanced, method = "svmRadial", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
-
 svm_rbf_toc = toc(quiet=T)
+
+tic()
+svm_lol_model_rbf = caret::train(is_bullying~ ., data = lol_train_balanced, method = "svmRadial", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+svm_lol_rbf_toc = toc(quiet=T)
+
+tic()
+svm_wow_model_rbf = caret::train(is_bullying~ ., data = wow_train_balanced, method = "svmRadial", trControl = random_train_control_grid, tuneLength=5, verbose=FALSE)
+svm_wow_rbf_toc = toc(quiet=T)
 
 # summarizing the results
 svm_rbf_tuned_time_taken = svm_rbf_toc$toc - svm_rbf_toc$tic
+svm_wow_rbf_tuned_time_taken = svm_wow_rbf_toc$toc - svm_wow_rbf_toc$tic
+svm_lol_rbf_tuned_time_taken = svm_lol_rbf_toc$toc - svm_lol_rbf_toc$tic
+
 svm_rbf_pred_y = predict(svm_model_rbf, test_balanced)
+svm_wow_rbf_pred_y = predict(svm_wow_model_rbf, wow_test_balanced)
+svm_lol_rbf_pred_y = predict(svm_lol_model_rbf, lol_test_balanced)
 ```
 
 ## MLP Tuned
@@ -789,27 +929,49 @@ svm_rbf_pred_y = predict(svm_model_rbf, test_balanced)
 set.seed(42)
 
 tic()
-
 mlp_model_tuned = caret::train(is_bullying~ ., data = train_balanced, method = "mlp", trControl = random_train_control_grid, tuneLength=5)
-
 mlp_toc = toc(quiet=T)
 
+tic()
+mlp_lol_model_tuned = caret::train(is_bullying~ ., data = lol_train_balanced, method = "mlp", trControl = random_train_control_grid, tuneLength=5)
+mlp_lol_toc = toc(quiet=T)
+
+tic()
+mlp_wow_model_tuned = caret::train(is_bullying~ ., data = wow_train_balanced, method = "mlp", trControl = random_train_control_grid, tuneLength=5)
+mlp_wow_toc = toc(quiet=T)
+
 mlp_tuned_time_taken = mlp_toc$toc - mlp_toc$tic
+mlp_lol_tuned_time_taken = mlp_lol_toc$toc - mlp_lol_toc$tic
+mlp_wow_tuned_time_taken = mlp_wow_toc$toc - mlp_wow_toc$tic
+
 mlp_tuned_pred_y = predict(mlp_model_tuned, test_balanced)
+mlp_lol_tuned_pred_y = predict(mlp_lol_model_tuned, lol_test_balanced)
+mlp_wow_tuned_pred_y = predict(mlp_wow_model_tuned, wow_test_balanced)
 ```
 
 ## GLMNET Tuned
-
 ```{r}
 set.seed(42)
 
 tic()
-
 glm_tuned_model = caret::train(is_bullying~., data=train_balanced , method = "glmnet" , trControl = random_train_control_grid, verbose=FALSE, tuneLength=5)
 glm_tuned_toc <- toc(quiet=T)
 
+tic()
+glm_lol_tuned_model = caret::train(is_bullying~., data=lol_train_balanced , method = "glmnet" , trControl = random_train_control_grid, verbose=FALSE, tuneLength=5)
+glm_lol_tuned_toc <- toc(quiet=T)
+
+tic()
+glm_wow_tuned_model = caret::train(is_bullying~., data=wow_train_balanced , method = "glmnet" , trControl = random_train_control_grid, verbose=FALSE, tuneLength=5)
+glm_wow_tuned_toc <- toc(quiet=T)
+
 glm_tuned_time_taken <- glm_tuned_toc$toc - glm_tuned_toc$tic
+glm_lol_tuned_time_taken <- glm_lol_tuned_toc$toc - glm_lol_tuned_toc$tic
+glm_wow_tuned_time_taken <- glm_wow_tuned_toc$toc - glm_wow_tuned_toc$tic
+
 glm_tuned_pred_y = predict(glm_tuned_model, test_balanced)
+glm_lol_tuned_pred_y = predict(glm_lol_tuned_model, lol_test_balanced)
+glm_wow_tuned_pred_y = predict(glm_wow_tuned_model, wow_test_balanced)
 ```
 
 # Step 7: Evaluation
@@ -835,7 +997,7 @@ train each model as this would help identify production costs for each
 model (the models would take much longer to train on big batches of
 data).
 
-## Creating confusion matrices
+## Creating confusion matrices (combined dataset)
 
 ```{r}
 svm_confusion_matrix <- caret::confusionMatrix(svm_pred_y, test_balanced$is_bullying)
@@ -896,7 +1058,127 @@ has actually decreased the accuracy of the model.
 glm_tuned_cf_matrix
 ```
 
-## ROC Curves
+## Creating confusion matrices (WoW dataset)
+```{r}
+svm_wow_confusion_matrix <- caret::confusionMatrix(svm_wow_pred_y, wow_test_balanced$is_bullying)
+mlp_wow_confusion_matrix <- caret::confusionMatrix(mlp_wow_pred_y, wow_test_balanced$is_bullying)
+glm_wow_confusion_matrix <- caret::confusionMatrix(glmnet_wow_pred_y, wow_test_balanced$is_bullying)
+```
+
+```{r}
+svm_wow_confusion_matrix
+```
+
+```{r}
+mlp_wow_confusion_matrix
+```
+
+```{r}
+glm_wow_confusion_matrix
+```
+
+When examining these confusion matrices, it would appear that the number
+of false positives (i.e. falsely classifying a post as cyberbullying) is
+the differentiating factor in terms of f1-score as the glmnet model has
+the least amount of false positives and it has the greatest f1-score (as
+we can see in the table of metrics below).
+
+```{r}
+svm_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_wow_pred_y, wow_test_balanced$is_bullying)
+svm_poly_cf_matrix <- caret::confusionMatrix(svm_wow_poly_pred_y, wow_test_balanced$is_bullying)
+svm_rbf_cf_matrix <- caret::confusionMatrix(svm_wow_rbf_pred_y, wow_test_balanced$is_bullying)
+
+mlp_tuned_cf_matrix <- caret::confusionMatrix(mlp_wow_tuned_pred_y, wow_test_balanced$is_bullying)
+glm_tuned_cf_matrix <- caret::confusionMatrix(glm_wow_tuned_pred_y, wow_test_balanced$is_bullying)
+```
+
+Here we create confusion matrices to get values such as F1 score,
+precision and recalls.
+
+```{r}
+svm_linear_tuned_cf_matrix
+```
+
+```{r}
+svm_poly_cf_matrix
+```
+
+```{r}
+svm_rbf_cf_matrix
+```
+
+```{r}
+mlp_tuned_cf_matrix
+```
+
+It would appear that tuning MLP parameters through random grid search
+has actually decreased the accuracy of the model.
+
+```{r}
+glm_tuned_cf_matrix
+```
+
+## Creating confusion matrices (LoL dataset)
+```{r}
+svm_lol_confusion_matrix <- caret::confusionMatrix(svm_lol_pred_y, lol_test_balanced$is_bullying)
+mlp_lol_confusion_matrix <- caret::confusionMatrix(mlp_lol_pred_y, lol_test_balanced$is_bullying)
+glm_lol_confusion_matrix <- caret::confusionMatrix(glmnet_lol_pred_y, lol_test_balanced$is_bullying)
+```
+
+```{r}
+svm_lol_confusion_matrix
+```
+
+```{r}
+mlp_lol_confusion_matrix
+```
+
+```{r}
+glm_lol_confusion_matrix
+```
+
+When examining these confusion matrices, it would appear that the number
+of false positives (i.e. falsely classifying a post as cyberbullying) is
+the differentiating factor in terms of f1-score as the glmnet model has
+the least amount of false positives and it has the greatest f1-score (as
+we can see in the table of metrics below).
+
+```{r}
+svm_lol_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_lol_pred_y, lol_test_balanced$is_bullying)
+svm_lol_poly_cf_matrix <- caret::confusionMatrix(svm_lol_poly_pred_y, lol_test_balanced$is_bullying)
+svm_lol_rbf_cf_matrix <- caret::confusionMatrix(svm_lol_rbf_pred_y, lol_test_balanced$is_bullying)
+
+mlp_lol_tuned_cf_matrix <- caret::confusionMatrix(mlp_lol_tuned_pred_y, lol_test_balanced$is_bullying)
+glm_lol_tuned_cf_matrix <- caret::confusionMatrix(glm_lol_tuned_pred_y, lol_test_balanced$is_bullying)
+```
+
+Here we create confusion matrices to get values such as F1 score,
+precision and recalls.
+
+```{r}
+svm_lol_linear_tuned_cf_matrix
+```
+
+```{r}
+svm_lol_poly_cf_matrix
+```
+
+```{r}
+svm_lol_rbf_cf_matrix
+```
+
+```{r}
+mlp_lol_tuned_cf_matrix
+```
+
+It would appear that tuning MLP parameters through random grid search
+has actually decreased the accuracy of the model.
+
+```{r}
+glm_lol_tuned_cf_matrix
+```
+
+## ROC Curves (combined dataset)
 
 ```{r}
 plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
@@ -938,8 +1220,89 @@ plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly
 This code creates ROC curves for each model with different colours. We
 then print the AUC values for each curve.
 
-## Table of metrics
+## ROC Curves (WoW dataset)
+```{r}
+plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
+  model_1_pred_y <- as.numeric(levels(model_1_pred_y))[model_1_pred_y]
+  model_2_pred_y <- as.numeric(levels(model_2_pred_y))[model_2_pred_y]
+  model_3_pred_y <- as.numeric(levels(model_3_pred_y))[model_3_pred_y]
 
+  par(pty="s")
+  model_1_roc <- roc(wow_test_balanced$is_bullying~model_1_pred_y, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
+  model_2_roc <- roc(wow_test_balanced$is_bullying~model_2_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, add=TRUE)
+  model_3_roc <- roc(wow_test_balanced$is_bullying, model_3_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, add=TRUE)
+  
+  legend("bottomright", legend=model_names, col=c("red", "blue", "green"), lwd=4)
+}
+```
+
+### Non-tuned models
+
+```{r message=FALSE}
+plot_roc_curves(svm_wow_pred_y, mlp_wow_pred_y, glmnet_wow_pred_y, c("SVM", "MLP", "GLMNET"))
+```
+
+### Comparing tuned SVM models
+
+```{r message=FALSE}
+plot_roc_curves(svm_tuned_wow_pred_y, svm_wow_poly_pred_y, svm_wow_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
+```
+
+It would appear that the polynomial kernel is most suitable for bullying
+classification. We will compare this SVM model that uses the polynomial
+kernel with other models.
+
+### Tuned models
+
+```{r message=FALSE}
+plot_roc_curves(svm_wow_poly_pred_y, mlp_wow_tuned_pred_y, glm_wow_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
+```
+
+This code creates ROC curves for each model with different colours. We
+then print the AUC values for each curve.
+
+## ROC Curves (LoL dataset)
+```{r}
+plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
+  model_1_pred_y <- as.numeric(levels(model_1_pred_y))[model_1_pred_y]
+  model_2_pred_y <- as.numeric(levels(model_2_pred_y))[model_2_pred_y]
+  model_3_pred_y <- as.numeric(levels(model_3_pred_y))[model_3_pred_y]
+
+  par(pty="s")
+  model_1_roc <- roc(lol_test_balanced$is_bullying~model_1_pred_y, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
+  model_2_roc <- roc(lol_test_balanced$is_bullying~model_2_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, add=TRUE)
+  model_3_roc <- roc(lol_test_balanced$is_bullying, model_3_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, add=TRUE)
+  
+  legend("bottomright", legend=model_names, col=c("red", "blue", "green"), lwd=4)
+}
+```
+
+### Non-tuned models
+
+```{r message=FALSE}
+plot_roc_curves(svm_lol_pred_y, mlp_lol_pred_y, glmnet_lol_pred_y, c("SVM", "MLP", "GLMNET"))
+```
+
+### Comparing tuned SVM models
+
+```{r message=FALSE}
+plot_roc_curves(svm_tuned_lol_pred_y, svm_lol_poly_pred_y, svm_lol_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
+```
+
+It would appear that the polynomial kernel is most suitable for bullying
+classification. We will compare this SVM model that uses the polynomial
+kernel with other models.
+
+### Tuned models
+
+```{r message=FALSE}
+plot_roc_curves(svm_lol_poly_pred_y, mlp_lol_tuned_pred_y, glm_lol_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
+```
+
+This code creates ROC curves for each model with different colours. We
+then print the AUC values for each curve.
+
+## Table of metrics
 For each model, we will be calculating the evaluation metrics we will be
 using (time taken, precision, sensitivity, f1 score, AUC) to create a
 table of metrics which can be used to evaluate each model. We are
@@ -949,6 +1312,7 @@ data in terms of computation. While it doesn't take that long to train
 the models with the sample data, it would take much longer if there was
 more data.
 
+### Combined dataset table
 ```{r}
 create_table <- function(prediction_list, time_to_train_c) {
   Model_Name = names(prediction_list)
@@ -989,7 +1353,65 @@ won't really amount to anything.
 We can also see that the mlp model performed the worst as it took a long
 time to train on a relatively small sample of data (almost 2 minutes)
 and it has the worst F1 and AUC scores where the F1 score was 66% whilst
-the AUC was 69%. \### Output evaluation results
+the AUC was 69%.
+
+### WoW dataset table
+```{r}
+create_table <- function(prediction_list, time_to_train_c) {
+  Model_Name = names(prediction_list)
+  Precision = c()
+  Recall = c()
+  F1_Score = c()
+  AUC = c()
+  Time_to_Train_secs = time_to_train_c
+  
+  for (prediction_y in prediction_list) {
+    Precision <- append(Precision, precision(prediction_y, wow_test_balanced$is_bullying))
+    Recall <- append(Recall, recall(prediction_y, wow_test_balanced$is_bullying))
+    F1_Score <- append(F1_Score, F_meas(prediction_y, wow_test_balanced$is_bullying))
+    AUC <- append(AUC, auc(wow_test_balanced$is_bullying, as.integer(prediction_y)))
+  }
+  
+  results <- data.frame(Model_Name, Precision, Recall, F1_Score, AUC, Time_to_Train_secs)
+  return(results)
+}
+```
+
+```{r message=FALSE}
+prediction_list = list(svm_linear = svm_tuned_wow_pred_y, svm_poly = svm_wow_poly_pred_y, svm_rbf = svm_wow_rbf_pred_y, mlp = mlp_wow_tuned_pred_y, glmnet = glm_wow_tuned_pred_y)
+time_to_train = c(svm_wow_time_taken, svm_wow_poly_tuned_time_taken, svm_wow_rbf_tuned_time_taken, mlp_wow_time_taken, glmnet_wow_time_taken)
+results = create_table(prediction_list, time_to_train)
+results
+```
+
+### LoL Dataset Table
+```{r}
+create_table <- function(prediction_list, time_to_train_c) {
+  Model_Name = names(prediction_list)
+  Precision = c()
+  Recall = c()
+  F1_Score = c()
+  AUC = c()
+  Time_to_Train_secs = time_to_train_c
+  
+  for (prediction_y in prediction_list) {
+    Precision <- append(Precision, precision(prediction_y, lol_test_balanced$is_bullying))
+    Recall <- append(Recall, recall(prediction_y, lol_test_balanced$is_bullying))
+    F1_Score <- append(F1_Score, F_meas(prediction_y, lol_test_balanced$is_bullying))
+    AUC <- append(AUC, auc(lol_test_balanced$is_bullying, as.integer(prediction_y)))
+  }
+  
+  results <- data.frame(Model_Name, Precision, Recall, F1_Score, AUC, Time_to_Train_secs)
+  return(results)
+}
+```
+
+```{r message=FALSE}
+prediction_list = list(svm_linear = svm_tuned_lol_pred_y, svm_poly = svm_lol_poly_pred_y, svm_rbf = svm_lol_rbf_pred_y, mlp = mlp_lol_tuned_pred_y, glmnet = glm_lol_tuned_pred_y)
+time_to_train = c(svm_lol_time_taken, svm_lol_poly_tuned_time_taken, svm_lol_rbf_tuned_time_taken, mlp_lol_time_taken, glmnet_lol_time_taken)
+results = create_table(prediction_list, time_to_train)
+results
+```
 
 ```{r}
 write.csv(results, "Data/results.csv")

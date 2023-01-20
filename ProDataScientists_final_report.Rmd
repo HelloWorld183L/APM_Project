@@ -1181,15 +1181,15 @@ glm_lol_tuned_cf_matrix
 ## ROC Curves (combined dataset)
 
 ```{r}
-plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
+plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names, test_data) {
   model_1_pred_y <- as.numeric(levels(model_1_pred_y))[model_1_pred_y]
   model_2_pred_y <- as.numeric(levels(model_2_pred_y))[model_2_pred_y]
   model_3_pred_y <- as.numeric(levels(model_3_pred_y))[model_3_pred_y]
 
   par(pty="s")
-  model_1_roc <- roc(test_balanced$is_bullying~model_1_pred_y, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
-  model_2_roc <- roc(test_balanced$is_bullying~model_2_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, add=TRUE)
-  model_3_roc <- roc(test_balanced$is_bullying, model_3_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, add=TRUE)
+  model_1_roc <- roc(test_data$is_bullying~model_1_pred_y, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
+  model_2_roc <- roc(test_data$is_bullying~model_2_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, add=TRUE)
+  model_3_roc <- roc(test_data$is_bullying, model_3_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, add=TRUE)
   
   legend("bottomright", legend=model_names, col=c("red", "blue", "green"), lwd=4)
 }
@@ -1198,13 +1198,13 @@ plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, mode
 ### Non-tuned models
 
 ```{r message=FALSE}
-plot_roc_curves(svm_pred_y, mlp_pred_y, glmnet_pred_y, c("SVM", "MLP", "GLMNET"))
+plot_roc_curves(svm_pred_y, mlp_pred_y, glmnet_pred_y, c("SVM", "MLP", "GLMNET"), test_balanced)
 ```
 
 ### Comparing tuned SVM models
 
 ```{r message=FALSE}
-plot_roc_curves(svm_tuned_pred_y, svm_poly_pred_y, svm_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
+plot_roc_curves(svm_tuned_pred_y, svm_poly_pred_y, svm_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"), test_balanced)
 ```
 
 It would appear that the polynomial kernel is most suitable for bullying
@@ -1214,38 +1214,23 @@ kernel with other models.
 ### Tuned models
 
 ```{r message=FALSE}
-plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
+plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"), test_balanced)
 ```
 
 This code creates ROC curves for each model with different colours. We
 then print the AUC values for each curve.
 
 ## ROC Curves (WoW dataset)
-```{r}
-plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
-  model_1_pred_y <- as.numeric(levels(model_1_pred_y))[model_1_pred_y]
-  model_2_pred_y <- as.numeric(levels(model_2_pred_y))[model_2_pred_y]
-  model_3_pred_y <- as.numeric(levels(model_3_pred_y))[model_3_pred_y]
-
-  par(pty="s")
-  model_1_roc <- roc(wow_test_balanced$is_bullying~model_1_pred_y, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
-  model_2_roc <- roc(wow_test_balanced$is_bullying~model_2_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, add=TRUE)
-  model_3_roc <- roc(wow_test_balanced$is_bullying, model_3_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, add=TRUE)
-  
-  legend("bottomright", legend=model_names, col=c("red", "blue", "green"), lwd=4)
-}
-```
 
 ### Non-tuned models
-
 ```{r message=FALSE}
-plot_roc_curves(svm_wow_pred_y, mlp_wow_pred_y, glmnet_wow_pred_y, c("SVM", "MLP", "GLMNET"))
+plot_roc_curves(svm_wow_pred_y, mlp_wow_pred_y, glmnet_wow_pred_y, c("SVM", "MLP", "GLMNET"), wow_test_balanced)
 ```
 
 ### Comparing tuned SVM models
 
 ```{r message=FALSE}
-plot_roc_curves(svm_tuned_wow_pred_y, svm_wow_poly_pred_y, svm_wow_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"))
+plot_roc_curves(svm_tuned_wow_pred_y, svm_wow_poly_pred_y, svm_wow_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"), wow_test_balanced)
 ```
 
 It would appear that the polynomial kernel is most suitable for bullying
@@ -1255,30 +1240,15 @@ kernel with other models.
 ### Tuned models
 
 ```{r message=FALSE}
-plot_roc_curves(svm_wow_poly_pred_y, mlp_wow_tuned_pred_y, glm_wow_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"))
+plot_roc_curves(svm_wow_poly_pred_y, mlp_wow_tuned_pred_y, glm_wow_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"), wow_test_balanced)
 ```
 
 This code creates ROC curves for each model with different colours. We
 then print the AUC values for each curve.
 
 ## ROC Curves (LoL dataset)
-```{r}
-plot_roc_curves <- function(model_1_pred_y, model_2_pred_y, model_3_pred_y, model_names) {
-  model_1_pred_y <- as.numeric(levels(model_1_pred_y))[model_1_pred_y]
-  model_2_pred_y <- as.numeric(levels(model_2_pred_y))[model_2_pred_y]
-  model_3_pred_y <- as.numeric(levels(model_3_pred_y))[model_3_pred_y]
-
-  par(pty="s")
-  model_1_roc <- roc(lol_test_balanced$is_bullying~model_1_pred_y, plot=TRUE, print.auc=TRUE, col="red", lwd=4, legacy.axes=TRUE, main="ROC Curves")
-  model_2_roc <- roc(lol_test_balanced$is_bullying~model_2_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.4, col="blue", lwd=4, add=TRUE)
-  model_3_roc <- roc(lol_test_balanced$is_bullying, model_3_pred_y, plot=TRUE, print.auc=TRUE, print.auc.y=0.6, col="green", lwd=4, add=TRUE)
-  
-  legend("bottomright", legend=model_names, col=c("red", "blue", "green"), lwd=4)
-}
-```
 
 ### Non-tuned models
-
 ```{r message=FALSE}
 plot_roc_curves(svm_lol_pred_y, mlp_lol_pred_y, glmnet_lol_pred_y, c("SVM", "MLP", "GLMNET"))
 ```
@@ -1312,9 +1282,8 @@ data in terms of computation. While it doesn't take that long to train
 the models with the sample data, it would take much longer if there was
 more data.
 
-### Combined dataset table
 ```{r}
-create_table <- function(prediction_list, time_to_train_c) {
+create_table <- function(prediction_list, time_to_train_c, test_data) {
   Model_Name = names(prediction_list)
   Precision = c()
   Recall = c()
@@ -1323,10 +1292,10 @@ create_table <- function(prediction_list, time_to_train_c) {
   Time_to_Train_secs = time_to_train_c
   
   for (prediction_y in prediction_list) {
-    Precision <- append(Precision, precision(prediction_y, test_balanced$is_bullying))
-    Recall <- append(Recall, recall(prediction_y, test_balanced$is_bullying))
-    F1_Score <- append(F1_Score, F_meas(prediction_y, test_balanced$is_bullying))
-    AUC <- append(AUC, auc(test_balanced$is_bullying, as.integer(prediction_y)))
+    Precision <- append(Precision, precision(prediction_y, test_data$is_bullying))
+    Recall <- append(Recall, recall(prediction_y, test_data$is_bullying))
+    F1_Score <- append(F1_Score, F_meas(prediction_y, test_data$is_bullying))
+    AUC <- append(AUC, auc(test_data$is_bullying, as.integer(prediction_y)))
   }
   
   results <- data.frame(Model_Name, Precision, Recall, F1_Score, AUC, Time_to_Train_secs)
@@ -1334,10 +1303,11 @@ create_table <- function(prediction_list, time_to_train_c) {
 }
 ```
 
+### Combined dataset table
 ```{r message=FALSE, cache=TRUE}
 prediction_list = list(svm_linear = svm_tuned_pred_y, svm_poly = svm_poly_pred_y, svm_rbf = svm_rbf_pred_y, mlp = mlp_tuned_pred_y, glmnet = glm_tuned_pred_y)
 time_to_train = c(svm_time_taken, svm_poly_tuned_time_taken, svm_rbf_tuned_time_taken, mlp_time_taken, glmnet_time_taken)
-results = create_table(prediction_list, time_to_train)
+results = create_table(prediction_list, time_to_train, test_balanced)
 results
 ```
 
@@ -1356,60 +1326,18 @@ and it has the worst F1 and AUC scores where the F1 score was 66% whilst
 the AUC was 69%.
 
 ### WoW dataset table
-```{r}
-create_table <- function(prediction_list, time_to_train_c) {
-  Model_Name = names(prediction_list)
-  Precision = c()
-  Recall = c()
-  F1_Score = c()
-  AUC = c()
-  Time_to_Train_secs = time_to_train_c
-  
-  for (prediction_y in prediction_list) {
-    Precision <- append(Precision, precision(prediction_y, wow_test_balanced$is_bullying))
-    Recall <- append(Recall, recall(prediction_y, wow_test_balanced$is_bullying))
-    F1_Score <- append(F1_Score, F_meas(prediction_y, wow_test_balanced$is_bullying))
-    AUC <- append(AUC, auc(wow_test_balanced$is_bullying, as.integer(prediction_y)))
-  }
-  
-  results <- data.frame(Model_Name, Precision, Recall, F1_Score, AUC, Time_to_Train_secs)
-  return(results)
-}
-```
-
 ```{r message=FALSE}
 prediction_list = list(svm_linear = svm_tuned_wow_pred_y, svm_poly = svm_wow_poly_pred_y, svm_rbf = svm_wow_rbf_pred_y, mlp = mlp_wow_tuned_pred_y, glmnet = glm_wow_tuned_pred_y)
 time_to_train = c(svm_wow_time_taken, svm_wow_poly_tuned_time_taken, svm_wow_rbf_tuned_time_taken, mlp_wow_time_taken, glmnet_wow_time_taken)
-results = create_table(prediction_list, time_to_train)
+results = create_table(prediction_list, time_to_train, wow_test_balanced)
 results
 ```
 
 ### LoL Dataset Table
-```{r}
-create_table <- function(prediction_list, time_to_train_c) {
-  Model_Name = names(prediction_list)
-  Precision = c()
-  Recall = c()
-  F1_Score = c()
-  AUC = c()
-  Time_to_Train_secs = time_to_train_c
-  
-  for (prediction_y in prediction_list) {
-    Precision <- append(Precision, precision(prediction_y, lol_test_balanced$is_bullying))
-    Recall <- append(Recall, recall(prediction_y, lol_test_balanced$is_bullying))
-    F1_Score <- append(F1_Score, F_meas(prediction_y, lol_test_balanced$is_bullying))
-    AUC <- append(AUC, auc(lol_test_balanced$is_bullying, as.integer(prediction_y)))
-  }
-  
-  results <- data.frame(Model_Name, Precision, Recall, F1_Score, AUC, Time_to_Train_secs)
-  return(results)
-}
-```
-
 ```{r message=FALSE}
 prediction_list = list(svm_linear = svm_tuned_lol_pred_y, svm_poly = svm_lol_poly_pred_y, svm_rbf = svm_lol_rbf_pred_y, mlp = mlp_lol_tuned_pred_y, glmnet = glm_lol_tuned_pred_y)
 time_to_train = c(svm_lol_time_taken, svm_lol_poly_tuned_time_taken, svm_lol_rbf_tuned_time_taken, mlp_lol_time_taken, glmnet_lol_time_taken)
-results = create_table(prediction_list, time_to_train)
+results = create_table(prediction_list, time_to_train, lol_test_balanced)
 results
 ```
 
@@ -1425,7 +1353,7 @@ Thomas Newton
 I was responsible for predictive modelling and hyperparameter tuning. I also created the problem statements and references.
 
 Leon Harper
-INSERT HERE
+I was responsible for importing the data (converting it from an SQL Dump file into corresponding csv files), cleaning the data and evaluating the performance of relevant models. I helped manage the project through the use of a trello board and I helped individuals on the project who were struggling.
 
 Michal Jedruszczak
 In this project I was responsible for the preliminary EDA and the final EDA. I

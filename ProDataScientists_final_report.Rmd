@@ -1435,7 +1435,7 @@ and it has the worst F1 and AUC scores.
 ```{r message=FALSE}
 prediction_list = list(svm_linear = svm_tuned_wow_pred_y, svm_poly = svm_wow_poly_pred_y, svm_rbf = svm_wow_rbf_pred_y, mlp = mlp_wow_tuned_pred_y, glmnet = glm_wow_tuned_pred_y)
 time_to_train = c(svm_wow_time_taken, svm_wow_poly_tuned_time_taken, svm_wow_rbf_tuned_time_taken, mlp_wow_time_taken, glmnet_wow_time_taken)
-results = create_table(prediction_list, time_to_train, wow_test_balanced)
+wow_results = create_table(prediction_list, time_to_train, wow_test_balanced)
 results
 ```
 

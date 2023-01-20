@@ -301,6 +301,7 @@ training and test datasets for model building where each dataset is a
 document term matrix as we cannot pass in raw text data to the models.
 Finally, we export the relevant data (including clean data).
 
+## Merging data
 ```{r}
 # Creates dataset column to merge posts and annotations csv files together
 wow_posts_df$dataset <- "WoW"
@@ -352,6 +353,7 @@ We also created a bullying_severity column as we found that some posts
 have been annotated as bullying by multiple annotators which could make
 this a useful feature for model building.
 
+## Removing HTML + pre-processing
 ```{r}
 remove_html <- function(html_msg, isHtml) {
   if(isHtml) {
@@ -426,6 +428,7 @@ being too rigorous.
 We removed the HTML characters first in order to prevent interference
 when removing punctuation or whitespace.
 
+## Word counts
 ```{r}
 posts_df$word_counts <- str_count(posts_df$html_message, "\\S+")
 ```
@@ -451,6 +454,9 @@ separately. This also comes in handy in order to save time when
 performing EDAs as pre-processing can take time (especially on slow
 computers).
 
+## Creating DTM
+
+### DTM for combined dataset
 ```{r}
 corpus = VCorpus(VectorSource(posts_df$html_message))
 dtm = DocumentTermMatrix(corpus)
@@ -459,6 +465,7 @@ posts_data = as.data.frame(as.matrix(dtm))
 posts_data$is_bullying = as.factor(posts_df$is_bullying)
 ```
 
+### DTM for separate datasets
 ```{r}
 lol_posts <- posts_df %>% filter(dataset=="LoL")
 wow_posts <- posts_df %>% filter(dataset=="WoW")
@@ -499,6 +506,8 @@ bullying cases. We will use undersampling because we have plenty of
 non-bullying data but not enough data for bullying cases (this means we
 can afford to reduce how much data we are dealing with).
 
+## Sampling the data
+### League of Legends dataset
 ```{r}
 is_bullying = which(lol_posts_data$is_bullying == 1)
 not_bullying = which(lol_posts_data$is_bullying == 0)
@@ -508,6 +517,7 @@ sample_not_bullying = sample(not_bullying, nsamp)
 lol_posts_data_balanced = lol_posts_data[c(sample_bullying, sample_not_bullying),]
 ```
 
+### World of Warcraft dataset
 ```{r}
 is_bullying = which(wow_posts_data$is_bullying == 1)
 not_bullying = which(wow_posts_data$is_bullying == 0)
@@ -517,6 +527,7 @@ sample_not_bullying = sample(not_bullying, nsamp)
 wow_posts_data_balanced = wow_posts_data[c(sample_bullying, sample_not_bullying),]
 ```
 
+### Combined dataset
 ```{r}
 is_bullying = which(posts_data$is_bullying == 1)
 not_bullying = which(posts_data$is_bullying == 0)
@@ -543,6 +554,7 @@ ggplot(data=wow_posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ggplot(data=lol_posts_data_balanced, aes(x=is_bullying)) + geom_bar()
 ```
 
+## Train/test split
 ```{r}
 set.seed(42)
 part <- sample(2, nrow(posts_data), replace=TRUE, prob=c(0.6, 0.4))
@@ -552,6 +564,7 @@ test <- posts_data[part == 2, ]
 
 We split the data using a 60:40 train-test split.
 
+### Combined data
 ```{r}
 set.seed(42)
 part <- sample(2, nrow(posts_data_balanced), replace=TRUE, prob=c(0.6, 0.4))
@@ -561,6 +574,7 @@ test_balanced <- posts_data_balanced[part == 2, ]
 
 We split the data using a 60:40 split. This is for the balanced data.
 
+### League of Legends dataset
 ```{r}
 set.seed(42)
 part <- sample(2, nrow(lol_posts_data_balanced), replace=TRUE, prob=c(0.6, 0.4))
@@ -568,6 +582,7 @@ lol_train_balanced <- lol_posts_data_balanced[part == 1, ]
 lol_test_balanced <- lol_posts_data_balanced[part == 2, ]
 ```
 
+### World of Warcraft dataset
 ```{r}
 set.seed(42)
 part <- sample(2, nrow(wow_posts_data_balanced), replace=TRUE, prob=c(0.6, 0.4))
@@ -575,14 +590,15 @@ wow_train_balanced <- wow_posts_data_balanced[part == 1, ]
 wow_test_balanced <- wow_posts_data_balanced[part == 2, ]
 ```
 
+### Exporting cleaned data
 ```{r cache=TRUE}
-write.csv(posts_data_balanced, file="Data/clean_posts_dtm_balanced_sample.csv")
-write.csv(wow_train_balanced, file="Data/clean_wow_train_balanced_sample.csv")
-write.csv(wow_test_balanced, file="Data/clean_wow_test_balanced_sample.csv")
-write.csv(lol_train_balanced, file="Data/clean_lol_train_balanced_sample.csv")
-write.csv(lol_test_balanced, file="Data/clean_lol_test_balanced_sample.csv")
-write.csv(train_balanced, file="Data/train_balanced.csv")
-write.csv(test_balanced, file="Data/test_balanced.csv")
+write.csv(posts_data_balanced, file="Data/Balanced/clean_posts_dtm_balanced_sample.csv")
+write.csv(wow_train_balanced, file="Data/Balanced/clean_wow_train_balanced_sample.csv")
+write.csv(wow_test_balanced, file="Data/Balanced/clean_wow_test_balanced_sample.csv")
+write.csv(lol_train_balanced, file="Data/Balanced/clean_lol_train_balanced_sample.csv")
+write.csv(lol_test_balanced, file="Data/Balanced/clean_lol_test_balanced_sample.csv")
+write.csv(train_balanced, file="Data/Balanced/train_balanced.csv")
+write.csv(test_balanced, file="Data/Balanced/test_balanced.csv")
 write.csv(train, file="Data/train.csv")
 write.csv(test, file="Data/test.csv")
 write.csv(posts_data, file="Data/clean_posts_dtm.csv")
@@ -866,7 +882,7 @@ words and understand how players were communicating with each other. For
 example, the phrase "commit suicide" can be seen in the bigram -
 messages with this phrase often were flagged as cyberbulling.
 
-# Step 5: Predictive modelling (combined dataset)
+# Step 5: Predictive modelling
 
 ## Initial setup
 
@@ -879,6 +895,7 @@ lol_test_balanced$is_bullying = as.factor(lol_test_balanced$is_bullying)
 wow_train_balanced$is_bullying = as.factor(wow_train_balanced$is_bullying)
 wow_test_balanced$is_bullying = as.factor(wow_test_balanced$is_bullying)
 
+set.seed(42)
 train_control = trainControl(method = "cv", number = 5)
 ```
 
@@ -990,9 +1007,12 @@ regression will be used.
 
 When we use caret to train a model by the "glmnet" tag, caret will
 select a generalized linear model (logistic regression in this case) via
-penalized maximum likelihood. \# Step 6: Hyperparameter Tuning
+penalized maximum likelihood. 
+
+# Step 6: Hyperparameter Tuning
 
 ```{r}
+set.seed(42)
 random_train_control_grid = caret::trainControl(method="cv", number=3, search="random")
 ```
 

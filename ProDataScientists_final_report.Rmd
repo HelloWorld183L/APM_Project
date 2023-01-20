@@ -159,65 +159,92 @@ clean the data and the kind of data that we are dealing with.
 
 ## League of Legends analysis
 
+In our League of Legends posts dataset, we are given 443 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional LoL annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. This information has been combined into a single file -- clean_posts_balanced_sample.csv.
+
+Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
+
+Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
+
+Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations dataset, all values but post number are categorical.
+
 ```{r}
-summary(lol_posts_df)
+posts_lol <- read.csv(file.choose())
+clean_posts_balanced_sample %>% filter(dataset == "LoL") -> posts_lol
+posts_lol #Selecting the League of Legends dataset
 ```
 
 ```{r}
-nrow(lol_posts_df)
+summary(posts_lol)
 ```
 
-There are 16867 data points in the League of Legends posts data.
+```{r}
+nrow(posts_lol)
+```
+
+There are 443 data points in this sample.
 
 ```{r}
-lol_posts_df %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
+posts_lol %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
 nrow(unique(lol_topics))
 ```
 
 This data set has a total of 17 different topics.
 
+```{r}
+posts_lol %>% filter(is_bullying == 1) -> bullying_lol
+bullying_lol
+```
+
+```{r}
+100 * count(bullying_lol)/count(posts_lol)#percentage of posts marked as cyberbullying
+```
+
+For this data set 57.6% of the posts are labeled as bullying.
+
 ## World of Warcraft analysis
 
-In our World of Warcraft posts dataset, we are given 16978 rows of 5
-features: topic_id, post_number, author, html_message and timestamp. For
-the purposes of this project, we will ignore timestamp, as it will not
-be used to train our models. The additional WoW annotations dataset
-reveals which messages were flagged as cyberbullying, from which the
-only useful features are the post_number and topic_id. This information
-has been combined into a single file -- clean_posts_balanced_sample.csv.
+In our World of Warcraft posts dataset, we are given 354 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional WoW annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. This information has been combined into a single file -- clean_posts_balanced_sample.csv.
 
-Posts in the main dataset are formatted using HTML, meaning that our
-model will either have to be trained to recognise patterns such as
-paragraph breaks or we will have to clean the data and transform it into
-something more appropriate.
+Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
 
-Furthermore, as we are only using a single set of features (post_number
-and topic_id) from the annotations dataset, we may be able to add
-another column to the posts dataset -- a Boolean value representing
-whether or not a specific post contains cyberbullying. This will
-eliminate the need for the use of two separate datasets to develop our
-models.
+Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
 
-Regarding the types of data we're given, topic IDs, authors and HTML
-messages are categorical, while post numbers are ordinal. In the
-annotations data set, all values but post number are categorical.
+Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations data set, all values but post number are categorical.
 
 ```{r}
-summary(wow_posts_df)
+posts_wow <- read.csv(file.choose())
+clean_posts_balanced_sample %>% filter(dataset == "WoW") -> posts_wow
+posts_wow #Selecting the World of Warcraft dataset
 ```
 
 ```{r}
-nrow(wow_posts_df)
+summary(posts_wow)
 ```
 
-There are 16978 data points.
+```{r}
+nrow(posts_wow)
+```
+
+There are 354 data points in this sample.
 
 ```{r}
-wow_posts_df %>% select("topic_id") -> wow_topics #gets all unique wow_topics from the dataset
+posts_wow %>% select("topic_id") -> wow_topics #gets all unique wow_topics from the dataset
 nrow(unique(wow_topics))
 ```
 
-This data set has a total of 23 different topics.
+This data set has a total of 20 different topics.
+
+```{r}
+posts_wow %>% filter(is_bullying == 1) -> bullying_wow
+bullying_wow
+```
+
+```{r}
+100 * count(bullying_wow)/count(posts_wow)#percentage of posts marked as cyberbullying
+```
+
+For this data set 43.8% of the posts are labeled as bullying.
+
 
 # Step 3: Cleaning the data / Pre-processing
 
@@ -539,28 +566,26 @@ pre-process the data (especially on slower computers).
 ```{r}
 posts_df %>% filter(dataset == "LoL") -> lol_posts
 lol_posts %>% filter(is_bullying == 1) -> bullying_lol
-bullying_lol
 ```
+Here we filter out our LoL data, and from that data we filter out all the messages that have been marked as cyberbulling. This allows us to calculate the percentage of cyberbullying cases in our dataset.
 
 ```{r}
 nrow(bullying_lol) / nrow(lol_posts) * 100
 ```
 
-For this data set 1.53% of the posts are labeled as bullying.
+For this dataset 1.53% of the posts are labeled as bullying.
 
 ```{r}
 lol_tibble <- tibble(txt = lol_posts$html_message)
 lol_tibble #transforming the HTML messages into a tibble for an easier workflow
 ```
 
-```{r message=FALSE}
+```{r}
 lol_tibble <- lol_tibble%>% 
     mutate(linenumber = row_number()) %>%
  unnest_tokens(word, txt) %>% anti_join(stop_words)
 lol_tibble #splitting tibble by words
-```
-
-```{r}
+  
 lol_counts <- lol_tibble %>% count(word, sort=TRUE)
 lol_counts #sorting words by count
 ```
@@ -588,6 +613,7 @@ lol_bigrams <- tibble(txt = lol_posts$html_message) %>%
 lol_bigrams
 #split original tibble into two-word bigrams
 ```
+Here we split the LoL tibble into bigram tokens. This allows us to perform an n-gram analysis and see the most common relationships between words.
 
 ```{r}
 lol_bigrams <- lol_bigrams %>%
@@ -600,31 +626,31 @@ lol_bigrams <- lol_bigrams %>%
       filter(!word1 %in% stop_words$word) %>%
       filter(!word2 %in% stop_words$word)
 lol_bigrams #filtering out unwanted words
-```
-
-```{r}
+  
 lol_bigrams <- lol_bigrams %>%
             filter(!is.na(word1)) %>% 
             filter(!is.na(word2))
 lol_bigrams #removing null values
-```
-
-```{r}
+  
 lol_bigrams <- lol_bigrams %>%
             unite(bigram, word1, word2, sep=" ")
 lol_bigrams #joining the words back together
 ```
 
+This code splits the bigram to remove any stop words, usernames and null values before joining the bigrams back together.
+  
+  
 ```{r}
 lol_bigram_counts <- lol_bigrams %>% count(bigram, sort=TRUE)
 lol_bigram_counts #counting and sorting bigrams
 ```
 
-```{r}
+```{r message = FALSE}
 lol_bigram_counts %>% 
   filter(str_detect(lol_bigram_counts$bigram,"[0-9]", negate = TRUE)) -> lol_bigram_counts
 lol_bigram_counts #removing any bigrams with numbers
 ```
+Here we remove any bigrams that contain numbers, as they don't provide any useful information.
 
 ```{r}
 lol_filtered_bigrams <- lol_bigram_counts %>%
@@ -632,7 +658,9 @@ lol_filtered_bigrams <- lol_bigram_counts %>%
 lol_filtered_bigrams #sorting remaining bigrams with a frequency of 4 or more
 ```
 
-```{r}
+This section is responsible for filtering out any bigrams that have a frequency of 4 or more. 4 was chosen as it was a compromise between how many bigrams could be visualised and how much information we could get out of the graphical representation.
+  
+```{r message = FALSE}
 lol_separated_bigrams <- lol_filtered_bigrams %>% 
   select("bigram") %>%
   separate(bigram, c("word1", "word2"), sep = " ") 
@@ -681,7 +709,8 @@ wow_posts <- posts_df %>% filter(dataset == "WoW")
 posts_df %>% filter(is_bullying == 1) -> bullying_wow
 bullying_wow
 ```
-
+Here we filter out our WoW data sample, and from that data we filter out all the messages that have been marked as cyberbulling. This allows us to calculate the percentage of cyberbullying cases in our dataset.
+  
 ```{r}
 nrow(bullying_wow) / nrow(wow_posts) * 100
 ```
@@ -693,19 +722,21 @@ wow_tibble <- tibble(txt = wow_posts$html_message)
 wow_tibble #transforming the HTML messages into a tibble for an easier workflow
 ```
 
+The tibble data type is more flexible than a string, which allows us to perform a larger variety of operations on it - such as filtering.
+              
 ```{r}
 wow_tibble <- wow_tibble%>% 
     mutate(linenumber = row_number()) %>%
  unnest_tokens(word, txt) %>% anti_join(stop_words)
 wow_tibble #splitting tibble by words and removing stop words
-```
-
-```{r}
+  
 wow_counts <- wow_tibble %>% count(word, sort=TRUE)
 wow_counts #sorting and counting the remaining words
 ```
-
-```{r}
+This section separates the tibble by line number and then by word. Stop words such as "it", "his" and "the" are removed. Then the remaining words are sorted by how frequently they appear in our data.
+  
+ 
+```{r warning=FALSE, cache=TRUE}
 wordcloud(wow_counts$word, wow_counts$n, max.words = 250,
           min.freq=25, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
   #creating word cloud
@@ -730,49 +761,52 @@ wow_bigrams <- tibble(txt = wow_posts$html_message) %>%
 wow_bigrams #split original tibble into two-word bigrams
 ```
 
+Here we split the WoW tibble into bigram tokens. This allows us to perform an n-gram analysis and see the most common relationships between the words used.
+  
 ```{r}
 wow_bigrams <- wow_bigrams %>%
       separate(bigram, c("word1", "word2"), sep = " ") 
-wow_bigrams #separating them out for easier cleaning
-```
-
-```{r}
+wow_bigrams #separating the words for easier cleaning
+  
 wow_bigrams <- wow_bigrams %>%
       filter(!word1 %in% stop_words$word) %>%
       filter(!word2 %in% stop_words$word)
 wow_bigrams #filtering out unwanted words
-```
-
-```{r}
+ 
 wow_bigrams <- wow_bigrams %>%
             filter(!is.na(word1)) %>% 
             filter(!is.na(word2))
 wow_bigrams #removing null values
-```
-
-```{r}
+  
 wow_bigrams <- wow_bigrams %>%
             unite(bigram, word1, word2, sep=" ")
 wow_bigrams #joining the words back together
 ```
+  
+This code splits the bigram to remove any stop words, usernames and null values before joining the bigrams back together.
 
 ```{r}
 wow_bigram_counts <- wow_bigrams %>% count(bigram, sort=TRUE)
 wow_bigram_counts #counting and sorting bigrams
 ```
+  
+Here we display a sorted list of bigrams by their frequency.
 
-```{r}
+```{r message = FALSE}
 wow_bigram_counts %>% 
   filter(str_detect(wow_bigram_counts$bigram,"[0-9]", negate = TRUE)) -> wow_bigram_counts
 wow_bigram_counts #removing any bigrams with numbers
 ```
+This function removes any bigrams containing numbers, as they don't relate to our project.
 
 ```{r}
 wow_filtered_bigrams <- wow_bigram_counts %>%
                   filter(n >= 4)
 wow_filtered_bigrams #sorting remaining bigrams with a frequency of 4 or more
 ```
-
+  
+Here we filter the bigrams, keeping only the ones that appear 4 or more times in the dataset. The number 4 was chosen due to how many relationships can be represented at once using the ggraph library.
+  
 ```{r}
 wow_separated_bigrams <- wow_filtered_bigrams %>% 
   select("bigram") %>%

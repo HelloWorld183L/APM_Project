@@ -168,82 +168,114 @@ Furthermore, as we are only using a single set of features (post_number and topi
 Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations dataset, all values but post number are categorical.
 
 ```{r}
-posts_lol <- read.csv(file.choose())
-clean_posts_balanced_sample %>% filter(dataset == "LoL") -> posts_lol
-posts_lol #Selecting the League of Legends dataset
+summary(lol_posts_df)
 ```
 
 ```{r}
-summary(posts_lol)
+nrow(lol_posts_df)
 ```
 
-```{r}
-nrow(posts_lol)
-```
-
-There are 443 data points in this sample.
+There are 16867 data points in our dataset.
 
 ```{r}
-posts_lol %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
+lol_posts_df %>% select("topic_id") -> lol_topics #gets all unique lol_topics from the dataset
 nrow(unique(lol_topics))
 ```
 
 This data set has a total of 17 different topics.
 
 ```{r}
-posts_lol %>% filter(is_bullying == 1) -> bullying_lol
-bullying_lol
+annotated_messages_lol <- merge(x = lol_posts_df, y = lol_annotations_df, by = c("topic_id","post_number"), all = TRUE) #outer join lol_posts_df and lol_annotations_df
+
+annotated_messages_lol %>% filter(annotator %in% c("1","2","3")) -> annotated_messages_lol
+
+annotated_messages_lol[!duplicated(annotated_messages_lol[3]),] -> annotated_messages_lol
+
+annotated_messages_lol %>% drop_na() -> annotated_messages_lol
+annotated_messages_lol
 ```
+
+This code shows all annotated messages (messages that have been marked as cyberbullying). This is accomplished through performing an outer join between lol_posts_df and lol_annotations_df, then filtering out all the messages that have been annotated and removing null rows. Finally, we remove all duplicate messages.
 
 ```{r}
-100 * count(bullying_lol)/count(posts_lol)#percentage of posts marked as cyberbullying
+100 * count(annotated_messages)/count(lol_posts_df)#percentage of posts marked as cyberbullying
 ```
 
-For this data set 57.6% of the posts are labeled as bullying.
+For this data set 0.27% of the posts are labeled as bullying. To make the data less skewed, we need to take a balanced sample of bullying and non-bullying messages.
+
+```{r}
+lol_annotations_df %>% select("annotator") -> lol_ann #gets all unique annotators from the annotations dataset
+nrow(unique(lol_ann))
+```
+
+We can see that there are three unique annotators for this dataset.
+
+```{r}
+lol_annotations_df %>% select("offender") -> lol_off #gets all unique offenders from the annotations dataset
+nrow(unique(lol_off))
+```
+
+152 unique offenders have been identified by the annotators.
 
 ## World of Warcraft analysis
 
-In our World of Warcraft posts dataset, we are given 354 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional WoW annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. This information has been combined into a single file -- clean_posts_balanced_sample.csv.
+In our World of Warcraft posts dataset, we are given 4921 rows of 5 features: topic_id, post_number, author, html_message and timestamp. For the purposes of this project, we will ignore timestamp, as it will not be used to train our models. The additional WoW annotations dataset reveals which messages were flagged as cyberbullying, from which the only useful features are the post_number and topic_id. This information has been combined into a single file -- clean_posts_balanced_sample.csv.
 
 Posts in the main dataset are formatted using HTML, meaning that our model will either have to be trained to recognise patterns such as paragraph breaks or we will have to clean the data and transform it into something more appropriate.
 
 Furthermore, as we are only using a single set of features (post_number and topic_id) from the annotations dataset, we may be able to add another column to the posts dataset -- a Boolean value representing whether or not a specific post contains cyberbullying. This will eliminate the need for the use of two separate datasets to develop our models.
 
-Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations data set, all values but post number are categorical.
+Regarding the types of data we're given, topic IDs, authors and HTML messages are categorical, while post numbers are ordinal. In the annotations dataset, all values but post number are categorical.
 
 ```{r}
-posts_wow <- read.csv(file.choose())
-clean_posts_balanced_sample %>% filter(dataset == "WoW") -> posts_wow
-posts_wow #Selecting the World of Warcraft dataset
+summary(wow_posts_df)
 ```
 
 ```{r}
-summary(posts_wow)
+nrow(wow_posts_df)
 ```
 
-```{r}
-nrow(posts_wow)
-```
-
-There are 354 data points in this sample.
+There are 4921 data points in our dataset.
 
 ```{r}
-posts_wow %>% select("topic_id") -> wow_topics #gets all unique wow_topics from the dataset
+wow_posts_df %>% select("topic_id") -> wow_topics #gets all unique wow_topics from the dataset
 nrow(unique(wow_topics))
 ```
 
-This data set has a total of 20 different topics.
+This data set has a total of 11 different topics.
 
 ```{r}
-posts_wow %>% filter(is_bullying == 1) -> bullying_wow
-bullying_wow
+annotated_messages_wow <- merge(x = wow_posts_df, y = wow_annotations_df, by = c("topic_id","post_number"), all = TRUE) #outer join wow_posts_df and wow_annotations_df
+
+annotated_messages_wow %>% filter(annotator %in% c("1","2","3")) -> annotated_messages_wow
+
+annotated_messages_wow[!duplicated(annotated_messages_wow[3]),] -> annotated_messages_wow
+
+annotated_messages_wow %>% drop_na() -> annotated_messages_wow
+annotated_messages_wow
 ```
+
+This code shows all annotated messages (messages that have been marked as cyberbullying). This is accomplished through performing an outer join between wow_posts_df and wow_annotations_df, then filtering out all the messages that have been annotated and removing null rows. Finally, we remove all duplicate messages.
 
 ```{r}
-100 * count(bullying_wow)/count(posts_wow)#percentage of posts marked as cyberbullying
+100 * count(annotated_messages_wow)/count(wow_posts_df)#percentage of posts marked as cyberbullying
 ```
 
-For this data set 43.8% of the posts are labeled as bullying.
+For this data set 0.91% of the posts are labeled as bullying. To make the data less skewed, we need to take a balanced sample of bullying and non-bullying messages.
+
+```{r}
+wow_annotations_df %>% select("annotator") -> wow_ann #gets all unique annotators from the annotations dataset
+nrow(unique(wow_ann))
+```
+
+We can see that there are three unique annotators for this dataset.
+
+```{r}
+wow_annotations_df %>% select("offender") -> wow_off #gets all unique offenders from the annotations dataset
+nrow(unique(wow_off))
+```
+
+102 unique offenders have been identified by the annotators.
 
 
 # Step 3: Cleaning the data / Pre-processing

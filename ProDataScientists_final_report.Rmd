@@ -1,14 +1,14 @@
 ---
 title: "Pro Data Scientists - Cyberbullying Classifier"
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: 4
-    latex_engine: xelatex
   html_document:
     toc: yes
     toc_depth: '4'
     df_print: paged
+  pdf_document:
+    toc: yes
+    toc_depth: 4
+    latex_engine: xelatex
 editor_options:
   markdown:
     wrap: 72
@@ -629,7 +629,7 @@ lol_tibble <- tibble(txt = lol_posts$html_message)
 lol_tibble #transforming the HTML messages into a tibble for an easier workflow
 ```
 
-```{r}
+```{r message=FALSE}
 lol_tibble <- lol_tibble%>% 
     mutate(linenumber = row_number()) %>%
  unnest_tokens(word, txt) %>% anti_join(stop_words)
@@ -898,6 +898,9 @@ wow_test_balanced$is_bullying = as.factor(wow_test_balanced$is_bullying)
 set.seed(42)
 train_control = trainControl(method = "cv", number = 5)
 ```
+
+
+We are using cross validation to help assess how the model will generalize onto new data and to detect overfitting. The aim here is to have a better estimate of the out-of-sample performance of the model.
 
 ## SVM
 
@@ -1201,8 +1204,7 @@ glm_confusion_matrix
 When examining these confusion matrices, it would appear that the number
 of false positives (i.e. falsely classifying a post as cyberbullying) is
 the differentiating factor in terms of f1-score as the glmnet model has
-the least amount of false positives and it has the greatest f1-score (as
-we can see in the table of metrics below).
+the least amount of false positives.
 
 ```{r}
 svm_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_pred_y, test_balanced$is_bullying)
@@ -1232,9 +1234,6 @@ svm_rbf_cf_matrix
 mlp_tuned_cf_matrix
 ```
 
-It would appear that tuning MLP parameters through random grid search
-has actually decreased the accuracy of the model.
-
 ```{r}
 glm_tuned_cf_matrix
 ```
@@ -1262,8 +1261,7 @@ glm_wow_confusion_matrix
 When examining these confusion matrices, it would appear that the number
 of false positives (i.e. falsely classifying a post as cyberbullying) is
 the differentiating factor in terms of f1-score as the glmnet model has
-the least amount of false positives and it has the greatest f1-score (as
-we can see in the table of metrics below).
+the least amount of false positives.
 
 ```{r}
 svm_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_wow_pred_y, wow_test_balanced$is_bullying)
@@ -1323,8 +1321,7 @@ glm_lol_confusion_matrix
 When examining these confusion matrices, it would appear that the number
 of false positives (i.e. falsely classifying a post as cyberbullying) is
 the differentiating factor in terms of f1-score as the glmnet model has
-the least amount of false positives and it has the greatest f1-score (as
-we can see in the table of metrics below).
+the least amount of false positives.
 
 ```{r}
 svm_lol_linear_tuned_cf_matrix <- caret::confusionMatrix(svm_tuned_lol_pred_y, lol_test_balanced$is_bullying)
@@ -1400,9 +1397,6 @@ kernel with other models.
 plot_roc_curves(svm_poly_pred_y, mlp_tuned_pred_y, glm_tuned_pred_y, c("SVM Poly", "MLP Tuned", "GLMNET"), test_balanced)
 ```
 
-This code creates ROC curves for each model with different colours. We
-then print the AUC values for each curve.
-
 ## ROC Curves (WoW dataset)
 
 ### Non-tuned models
@@ -1413,7 +1407,7 @@ plot_roc_curves(svm_wow_pred_y, mlp_wow_pred_y, glmnet_wow_pred_y, c("SVM", "MLP
 
 It would appear that the glmnet model is very effective when used with
 the world of warcraft dataset as it has a much greater specificity than
-the other models.
+the other models. However, MLP has a slightly higher AUC.
 
 ### Comparing tuned SVM models
 
@@ -1421,18 +1415,14 @@ the other models.
 plot_roc_curves(svm_tuned_wow_pred_y, svm_wow_poly_pred_y, svm_wow_rbf_pred_y, c("SVM Linear", "SVM Poly", "SVM RBF"), wow_test_balanced)
 ```
 
-It would appear that the linear model has the greatest AUC. We can
+It would appear that the RBF model has the greatest AUC. We can
 compare this model with other models.
 
 ### Tuned models
 
 ```{r message=FALSE}
-plot_roc_curves(svm_tuned_wow_pred_y, mlp_wow_tuned_pred_y, glm_wow_tuned_pred_y, c("SVM Linear", "MLP Tuned", "GLMNET"), wow_test_balanced)
+plot_roc_curves(svm_wow_rbf_pred_y, mlp_wow_tuned_pred_y, glm_wow_tuned_pred_y, c("SVM RBF", "MLP Tuned", "GLMNET"), wow_test_balanced)
 ```
-
-Surprisingly enough, the glmnet model has the worst performance out of
-all the models despite being tuned. This would suggest that the tuning
-had an overall negative effect.
 
 ## ROC Curves (LoL dataset)
 
@@ -1504,18 +1494,11 @@ results = create_table(prediction_list, time_to_train, test_balanced)
 results
 ```
 
-From these results, it would appear that the glmnet logistic regression
-model has the greatest performance as it has the greatest F1 score and
-AUC score. It is also relatively quick to train which can reduce costs
-if deployed in a large-scale system where the model may be continuously
-trained with new data. However, the SVM model with a polynomial kernel
-appears to be slightly better in terms of recall than the glmnet model.
-However, this difference is very small to where it won't really amount
-to anything.
+From these results, we can see that the svm_poly model had the greatest f1_score and the second greatest AUC score where it seems to be equally as good as the glmnet. Choosing between the two models may come down to prioritising either precision or recall. Both models are also relatively quick to train which can reduce production costs.
 
 We can also see that the mlp model performed the worst as it took a long
 time to train on a relatively small sample of data (almost 2 minutes)
-and it has the worst F1 and AUC scores.
+and it has the worst F1 and AUC scores. However, it does have the highest precision (at the cost of a relatively bad recall).
 
 ### WoW dataset table
 
@@ -1526,10 +1509,11 @@ wow_results = create_table(prediction_list, time_to_train, wow_test_balanced)
 results
 ```
 
-From these results, we can see that the svm_linear model has the
-greatest f1 score (69%) and the greatest AUC score. Compared to the
-combined datasets table, glmnet performs significantly worse which could
-suggest that glmnet works significantly better with larger datasets.
+From these results, we can see that the svm_poly model had the greatest f1_score and the second greatest AUC score where it seems to be equally as good as the glmnet. Choosing between the two models may come down to prioritising either precision or recall. Both models are also relatively quick to train which can reduce production costs.
+
+We can also see that the mlp model performed the worst as it took a long
+time to train on a relatively small sample of data (almost 2 minutes)
+and it has the worst F1 and AUC scores. However, it does have the highest precision (at the cost of a relatively bad recall).
 
 ### LoL Dataset Table
 
@@ -1540,12 +1524,7 @@ lol_results = create_table(prediction_list, time_to_train, lol_test_balanced)
 lol_results
 ```
 
-From these results, we can see that the tuned MLP model performs the
-greatest for the League of Legends dataset. However, it takes a long
-time to train which could prove computationally expensive when provided
-with more data. We can see a bias towards a higher recall versus
-precision when comparing the precision values to the recall values.
-
+From these results, we can see that the svm_poly model has the greatest F1_Score whilst the svm_linear has a slightly higher AUC. However, svm_poly has the worst precision whereas glmnet has the highest precision. We could choose the glmnet model as the precision and recall are not as far apart from each other.
 ### Output results
 
 ```{r}

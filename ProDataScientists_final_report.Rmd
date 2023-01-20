@@ -198,10 +198,11 @@ annotated_messages_lol
 This code shows all annotated messages (messages that have been marked as cyberbullying). This is accomplished through performing an outer join between lol_posts_df and lol_annotations_df, then filtering out all the messages that have been annotated and removing null rows. Finally, we remove all duplicate messages.
 
 ```{r}
-100 * count(annotated_messages)/count(lol_posts_df)#percentage of posts marked as cyberbullying
+100 * count(annotated_messages_lol)/count(lol_posts_df)#percentage of posts marked as cyberbullying
 ```
 
-For this data set 0.27% of the posts are labeled as bullying. To make the data less skewed, we need to take a balanced sample of bullying and non-bullying messages.
+
+For this data set 0.9% of the posts are labeled as bullying. To make the data less skewed, we need to take a balanced sample of bullying and non-bullying messages.
 
 ```{r}
 lol_annotations_df %>% select("annotator") -> lol_ann #gets all unique annotators from the annotations dataset
@@ -920,7 +921,7 @@ text classification problems.
 
 ## MLP
 
-```{r cache=TRUE}
+```{r cache=TRUE, warning=FALSE}
 set.seed(42)
 
 tic()
@@ -1082,7 +1083,7 @@ svm_lol_rbf_pred_y = predict(svm_lol_model_rbf, lol_test_balanced)
 
 ## MLP Tuned
 
-```{r cache=TRUE}
+```{r cache=TRUE, warning=FALSE}
 set.seed(42)
 
 tic()
